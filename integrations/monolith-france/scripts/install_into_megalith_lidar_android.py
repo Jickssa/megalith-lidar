@@ -1,15 +1,28 @@
 #!/usr/bin/env python3
-"""Installe Monolith France dans un clone source compatible de megalith-lidar."""
+"""Install Monolith France in the upstream Android project, idempotently."""
 from __future__ import annotations
+
 import argparse
-from pathlib import Path
 import re
 import shutil
 import sys
+from pathlib import Path
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[1]
-IMAGE_NAMES = ("layers.png", "layers-2x.png", "marker-icon.png",
-               "marker-icon-2x.png", "marker-shadow.png")
+IMAGE_NAMES = (
+    "layers.png",
+    "layers-2x.png",
+    "marker-icon.png",
+    "marker-icon-2x.png",
+    "marker-shadow.png",
+)
+START_URL = "https://appassets.androidplatform.net/assets/web/france/web/index.html"
+OLD_START_URL = "https://appassets.androidplatform.net/assets/web/index.html"
+START_URL_PATTERN = re.compile(
+    r'(private\s+const\s+val\s+START_URL\s*=\s*)(["\'])'
+    + re.escape(OLD_START_URL)
+    + r'\2'
+)
 
 
 def backup_once(path: Path) -> None:
@@ -18,14 +31,26 @@ def backup_once(path: Path) -> None:
         shutil.copy2(path, backup)
 
 
-def replace_once(path: Path, old: str, new: str, marker: str) -> None:
-    text = path.read_text(encoding="utf-8")
-    if marker in text or new in text:
+def replace_text_once(path: Path, old: str, new: str, marker: str) -> None:
+    content = path.read_text(encoding="utf-8")
+    if marker in content:
         return
-    if old not in text:
-        raise RuntimeError(f"Ancre absente dans {path}: {old!r}")
+    if old not in content:
+        raise RuntimeError(f"Anchor not found in {path}: {old!r}")
     backup_once(path)
-    path.write_text(text.replace(old, new, 1), encoding="utf-8")
+    path.write_text(content.replace(old, new, 1), encoding="utf-8")
+
+
+def validate_png(path: Path) -> None:
+    try:
+        from PIL import Image
+    except ImportError as exc:
+        raise RuntimeError("Pillow is required to validate Leaflet PNG assets.") from exc
+    try:
+        with Image.open(path) as image:
+            image.verify()
+    except Exception as exc:
+        raise RuntimeError(f"Invalid Leaflet PNG asset: {path}: {exc}") from exc
 
 
 def main() -> int:
@@ -43,51 +68,68 @@ def main() -> int:
     gradle = repo / "android/app/build.gradle.kts"
     strings = repo / "android/app/src/main/res/values/strings.xml"
     integration = repo / "integrations/monolith-france"
-    required = (activity, manifest, leaflet / "leaflet.js", leaflet / "leaflet.css",
-                prepare, gradle, strings)
-    missing = [str(p) for p in required if not p.is_file()]
+
+    required = (
+        activity, manifest, leaflet / "leaflet.js", leaflet / "leaflet.css",
+        prepare, gradle, strings,
+    )
+    missing = [str(path) for path in required if not path.is_file()]
     if missing:
-        print("Structure source incompatible :\n" + "\n".join(missing), file=sys.stderr)
+        print("Incompatible source project; missing:\n" + "\n".join(missing), file=sys.stderr)
         return 2
 
-    at = activity.read_text(encoding="utf-8")
-    mf = manifest.read_text(encoding="utf-8")
-    prep = prepare.read_text(encoding="utf-8")
-    grad = gradle.read_text(encoding="utf-8")
-    leaf_header = (leaflet / "leaflet.js").read_text(encoding="utf-8", errors="replace")[:500]
-    if "Leaflet 1.9.4" not in leaf_header:
-        raise RuntimeError("Leaflet source 1.9.4 non confirmé; arrêt préventif.")
-    for token in ('addJavascriptInterface(AndroidBridge(), "MegalithAndroid")',
-                  "fun saveOrShareFile", "setGeolocationEnabled(true)"):
-        if token not in at:
-            raise RuntimeError(f"Capacité WebView attendue absente : {token}")
-    for permission in ("android.permission.INTERNET", "android.permission.ACCESS_COARSE_LOCATION",
-                       "android.permission.ACCESS_FINE_LOCATION"):
-        if permission not in mf:
-            raise RuntimeError(f"Permission amont absente : {permission}")
-    anchor = "    export_osmand_files(docs_out, updated_utc=updated_utc, include_obf=False)\n"
-    if "MONOLITH_FRANCE_INTEGRATION" not in prep and anchor not in prep:
-        raise RuntimeError("Hook de préparation Android introuvable.")
-    if 'inputs.dir(File(rootRepoDir, "integrations/monolith-france"))' not in grad and \
-       'inputs.file(File(rootRepoDir, "scripts/export_osmand_plugin.py"))' not in grad:
-        raise RuntimeError("Point d'entrée des inputs Gradle non reconnu.")
-    start_re = re.compile(
-        r'(private\s+const\s+val\s+START_URL\s*=\s*\n?\s*)'
-        r'"https://appassets\.androidplatform\.net/assets/web/index\.html"'
-    )
-    start_url = "https://appassets.androidplatform.net/assets/web/france/web/index.html"
-    if start_url not in at and not start_re.search(at):
-        raise RuntimeError("START_URL amont inattendue; arrêt sans modification.")
-    if integration.exists() and not args.force:
-        raise RuntimeError(f"{integration} existe; utiliser --force pour remplacer explicitement.")
+    activity_text = activity.read_text(encoding="utf-8")
+    manifest_text = manifest.read_text(encoding="utf-8")
+    prepare_text = prepare.read_text(encoding="utf-8")
+    gradle_text = gradle.read_text(encoding="utf-8")
 
-    source_images = PACKAGE_ROOT / "web/vendor/images"
+    js_header = (leaflet / "leaflet.js").read_text(encoding="utf-8", errors="replace")[:1000]
+    if "Leaflet" not in js_header or "1.9.4" not in js_header:
+        raise RuntimeError("Upstream Leaflet 1.9.4 could not be confirmed.")
+
+    expected_activity_tokens = (
+        'addJavascriptInterface(AndroidBridge(), "MegalithAndroid")',
+        "fun saveOrShareFile",
+        "setGeolocationEnabled(true)",
+        "WebViewAssetLoader.Builder()",
+        'addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(this))',
+    )
+    for token in expected_activity_tokens:
+        if token not in activity_text:
+            raise RuntimeError(f"Expected Android WebView capability absent: {token}")
+    for permission in (
+        "android.permission.INTERNET",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+    ):
+        if permission not in manifest_text:
+            raise RuntimeError(f"Upstream Android permission missing: {permission}")
+
+    if "def prepare_android_assets()" not in prepare_text:
+        raise RuntimeError("prepare_android_assets() was not found.")
+    if "web_out = REPO_ROOT / \"android\"" not in prepare_text:
+        raise RuntimeError("Expected Android web asset generation path not found.")
+    if "export_osmand_files(docs_out, updated_utc=updated_utc, include_obf=False)" not in prepare_text:
+        raise RuntimeError("Expected upstream asset-generation completion anchor not found.")
+
+    if 'inputs.file(File(rootRepoDir, "scripts/prepare_android_assets.py"))' not in gradle_text:
+        raise RuntimeError("Gradle prepareWebAssets task not recognized.")
+
+    if START_URL not in activity_text and not START_URL_PATTERN.search(activity_text):
+        raise RuntimeError("Unexpected MainActivity START_URL; refusing to modify it.")
+
+    if integration.exists() and not args.force:
+        raise RuntimeError(f"{integration} already exists; pass --force to replace it.")
+
+    images = PACKAGE_ROOT / "web/vendor/images"
     for name in IMAGE_NAMES:
-        p = source_images / name
-        if not p.is_file() or p.stat().st_size < 60 or p.read_bytes()[:8] != b"\\x89PNG\\r\\n\\x1a\\n":
-            raise RuntimeError(f"Image Leaflet absente ou invalide : {p}")
+        image = images / name
+        if not image.is_file():
+            raise RuntimeError(f"Leaflet image missing: {image}")
+        validate_png(image)
+
     if args.dry_run:
-        print("DRY-RUN OK : source, Activity, permissions, Leaflet, hook et Gradle.")
+        print("DRY-RUN OK: Android host, WebView, permissions, Leaflet, Gradle, and PNG assets.")
         return 0
 
     if integration.exists():
@@ -96,14 +138,10 @@ def main() -> int:
     for folder in ("web", "config", "docs"):
         shutil.copytree(PACKAGE_ROOT / folder, integration / folder)
 
-    # The upstream app ships its own Leaflet 1.9.4 CSS/JS. Supply its image
-    # assets beside that CSS because the upstream APK omitted them.
-    image_out = repo / "android/app/src/main/assets/web/leaflet/images"
-    image_out.mkdir(parents=True, exist_ok=True)
-    for name in IMAGE_NAMES:
-        shutil.copy2(source_images / name, image_out / name)
-
-    hook = '''    # MONOLITH_FRANCE_INTEGRATION: réinstaller les assets après leur génération.
+    # Inject the module at the very end of the upstream asset-generation function.
+    hook_marker = "MONOLITH_FRANCE_INTEGRATION_V2"
+    hook = '''
+    # MONOLITH_FRANCE_INTEGRATION_V2: module recopié après le nettoyage/rebuild des assets.
     france_src = REPO_ROOT / "integrations" / "monolith-france"
     if france_src.is_dir():
         france_out = web_out / "france"
@@ -111,36 +149,56 @@ def main() -> int:
             shutil.rmtree(france_out)
         for folder in ("web", "config", "docs"):
             shutil.copytree(france_src / folder, france_out / folder)
-        image_src = france_src / "web" / "vendor" / "images"
-        image_dst = web_out / "leaflet" / "images"
-        image_dst.mkdir(parents=True, exist_ok=True)
+        leaflet_images = web_out / "leaflet" / "images"
+        leaflet_images.mkdir(parents=True, exist_ok=True)
         for image_name in ("layers.png", "layers-2x.png", "marker-icon.png",
                            "marker-icon-2x.png", "marker-shadow.png"):
-            shutil.copy2(image_src / image_name, image_dst / image_name)
+            shutil.copy2(france_src / "web" / "vendor" / "images" / image_name,
+                         leaflet_images / image_name)
 '''
-    replace_once(prepare, anchor, anchor + hook, "MONOLITH_FRANCE_INTEGRATION")
-    grad_anchor = '    inputs.file(File(rootRepoDir, "scripts/export_osmand_plugin.py"))\n'
-    if 'inputs.dir(File(rootRepoDir, "integrations/monolith-france"))' not in grad:
-        replace_once(gradle, grad_anchor, grad_anchor +
-                     '    inputs.dir(File(rootRepoDir, "integrations/monolith-france"))\n',
-                     'inputs.dir(File(rootRepoDir, "integrations/monolith-france"))')
+    if hook_marker not in prepare_text:
+        anchor = "    export_osmand_files(docs_out, updated_utc=updated_utc, include_obf=False)\n"
+        replace_text_once(prepare, anchor, anchor + hook, hook_marker)
 
-    at_now = activity.read_text(encoding="utf-8")
-    if start_url not in at_now:
-        patched, count = start_re.subn(lambda m: m.group(1) + '"' + start_url + '"', at_now, count=1)
+    # Register the module folder as a task input so Gradle rebuilds assets when it changes.
+    gradle_text = gradle.read_text(encoding="utf-8")
+    gradle_marker = 'inputs.dir(File(rootRepoDir, "integrations/monolith-france"))'
+    if gradle_marker not in gradle_text:
+        gradle_anchor = '    inputs.file(File(rootRepoDir, "scripts/export_osmand_plugin.py"))\n'
+        replace_text_once(
+            gradle,
+            gradle_anchor,
+            gradle_anchor + "    " + gradle_marker + "\n",
+            gradle_marker,
+        )
+
+    # Change only the known upstream START_URL declaration.
+    activity_text = activity.read_text(encoding="utf-8")
+    if START_URL not in activity_text:
+        changed, count = START_URL_PATTERN.subn(
+            lambda match: match.group(1) + '"' + START_URL + '"',
+            activity_text,
+            count=1,
+        )
         if count != 1:
-            raise RuntimeError("START_URL impossible à remplacer après validation.")
+            raise RuntimeError("Unable to update the expected START_URL declaration.")
         backup_once(activity)
-        activity.write_text(patched, encoding="utf-8")
-    st = strings.read_text(encoding="utf-8")
-    if "Megalith LiDAR France" not in st:
-        updated, count = re.subn(r'(<string\s+name="app_name"[^>]*>).*?(</string>)',
-                                 r'\\1Megalith LiDAR France\\2', st, count=1, flags=re.S)
+        activity.write_text(changed, encoding="utf-8")
+
+    strings_text = strings.read_text(encoding="utf-8")
+    if "Megalith LiDAR France" not in strings_text:
+        pattern = re.compile(r'(<string\s+name="app_name"[^>]*>).*?(</string>)', re.S)
+        changed, count = pattern.subn(
+            lambda match: match.group(1) + "Megalith LiDAR France" + match.group(2),
+            strings_text,
+            count=1,
+        )
         if count != 1:
-            raise RuntimeError("Ressource app_name introuvable.")
+            raise RuntimeError("Could not find app_name resource.")
         backup_once(strings)
-        strings.write_text(updated, encoding="utf-8")
-    print("Installation terminée. Atlas britannique conservé; Activity et permissions réutilisées.")
+        strings.write_text(changed, encoding="utf-8")
+
+    print("Installation completed. UK atlas remains accessible at /assets/web/index.html.")
     return 0
 
 
