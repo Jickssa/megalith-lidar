@@ -1,0 +1,13 @@
+{
+  "schemaVersion":"1.0",
+  "categories":[
+    {"id":"dolmen","label":"Dolmen / sépulture mégalithique","terms":["dolmen","allée couverte","sépulture mégalithique"]},
+    {"id":"menhir","label":"Menhir / pierre dressée","terms":["menhir","pierre dressée","stèle"]},
+    {"id":"alignment","label":"Alignement / cercle","terms":["alignement mégalithique","cromlech","enceinte à pierres"]},
+    {"id":"tumulus","label":"Tumulus / tertre","terms":["tumulus","tertres","cairn"]},
+    {"id":"enclosure","label":"Enceinte / fortification","terms":["enceinte","oppidum","enceinte protohistorique"]},
+    {"id":"ancient-road","label":"Voie ancienne / structure linéaire","terms":["voie antique","voie romaine","chemin ancien"]},
+    {"id":"uncertain","label":"Structure à déterminer","terms":[]}
+  ],
+  "interpretation":"Les catégories servent à organiser les relevés et les résultats documentaires ; elles ne constituent pas une datation ni une validation archéologique."
+}
