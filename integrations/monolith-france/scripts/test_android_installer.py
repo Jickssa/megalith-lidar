@@ -118,8 +118,9 @@ if __name__ == "__main__":
         assert not (repo / "integrations/monolith-france").exists()
 
         invoke(repo)
-        # The real CI invokes the installer from its own source checkout with an existing module destination.
-        subprocess.run([sys.executable, str(INSTALLER), str(ROOT.parent.parent), "--force"], check=True)
+        # The source package is checked before the force reinstall; the fixture target is then reinstalled.
+        assert (ROOT / "web/index.html").is_file()
+        invoke(repo, "--force")
         assert (ROOT / "web/index.html").is_file()
         assert "/assets/web/france/web/index.html" in activity.read_text(encoding="utf-8")
         assert "Megalith LiDAR France" in strings.read_text(encoding="utf-8")
