@@ -1,1 +1,4 @@
-IyBwYWNrYWdlIGxvY2FsIGNhY2hlcyBvbmx5Cl9fcHljYWNoZV9fLwoucGF5YwouRFNfU3RvcmUK
+# Cache locale du paquet
+__pycache__/
+*.py[cod]
+.DS_Store
