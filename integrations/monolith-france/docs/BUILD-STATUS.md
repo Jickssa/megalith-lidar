@@ -5,29 +5,31 @@
 - Branche de travail : `feature/monolith-france-1.1.0`.
 - PR #1 : ouverte, en brouillon, non fusionnée ; cible `main`.
 - Aucune modification n'a été poussée sur `main`.
-- Commit source testé par le dernier build : `946d3125d88fb671b192a7b77a17bdf26ffa1f0b`.
+- Commit du code fonctionnel testé : `946d3125d88fb671b192a7b77a17bdf26ffa1f0b`.
+- Le commit documentaire `ad2b53c56c2ce47f0702436225257975a75b1aad` ne modifie que ce rapport.
 
-## Dernier build Android validé
+## Dernier APK téléchargé et inspecté directement
 
-- Workflow GitHub Actions : run PR #75 — succès intégral.
-- Run : https://github.com/Jickssa/megalith-lidar/actions/runs/45083702285
+- Workflow PR #77 : succès intégral, deux jobs verts.
+- Run : https://github.com/Jickssa/megalith-lidar/actions/runs/45083906356
+- Tête testée : `ad2b53c56c2ce47f0702436225257975a75b1aad`.
 - Environnement : Temurin JDK 17, Android Platform 35, Build Tools 35.0.0.
 - Commande : `./android/gradlew -p android assembleDebug --no-daemon --stacktrace --warning-mode all`.
 - L'installateur a été exécuté sur le véritable checkout Android avant Gradle.
 - APK Debug : `megalith-lidar-france-debug.apk`.
-- Taille : 19 007 219 octets.
-- SHA-256 : `fc8562ecf9b34cdfeed67cc31cb933cd870f70f6ddf55d556c1d2b1c4e0b48a9`.
+- Taille : 19 007 703 octets.
+- SHA-256 : `5d4ae1057cc69caad4e1915ce360b30d4dbaf96e0fb8b010c95a06eb362b8df8`.
 - ZIP interne : CRC valide, 94 entrées.
 - Ressources UK, France, JavaScript/CSS Leaflet et configuration France présentes.
 - L'APK embarque uniquement les modes UI IGN « Lieu / adresse » et OSM « Archéologie » ; l'option POI IGN « mégalithe » non validée est absente.
 - Les cinq images Leaflet intégrées sont décodables, non transparentes et à leurs dimensions attendues.
 - `zipalign -c -v 4` : succès.
 - `apksigner verify --verbose` : succès, signature APK v2 valide.
-- Artefact GitHub Actions ID : `14778635318`.
-- URL de l'artefact : https://github.com/Jickssa/megalith-lidar/actions/runs/45083702285/artifacts/14778635318
+- Artefact GitHub Actions ID : `14778470922`.
+- URL de l'artefact : https://github.com/Jickssa/megalith-lidar/actions/runs/45083906356/artifacts/14778470922
 - Expiration annoncée : 6 décembre 2026.
 
-## Contrôles automatisés du run #75
+## Contrôles automatisés du run #77
 
 Les deux jobs sont terminés avec succès :
 
@@ -45,7 +47,9 @@ Les deux jobs sont terminés avec succès :
    - vérification d'alignement et de signature ;
    - dépôt de l'APK et de son fichier SHA-256.
 
-## Corrections incluses dans le build #75
+Le run #75 avait déjà validé le code fonctionnel sur le commit `946d3125`. Le run #77 confirme le même code après la mise à jour documentaire et fournit l'artefact actuellement inspecté.
+
+## Corrections incluses dans l'APK inspectée
 
 - Le sélecteur ne propose plus le POI IGN « mégalithe » tant que son schéma de recherche n'est pas validé.
 - Le géocodage IGN est le mode de recherche par défaut ; la recherche OSM se fait sur l'emprise cartographique.
