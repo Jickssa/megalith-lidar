@@ -43,6 +43,8 @@ def main() -> int:
         ERRORS.append("Territoire ou locale incorrects.")
     if config.get("coordinateReferenceSystem") != "EPSG:4326":
         ERRORS.append("Le CRS attendu pour l'interface doit être EPSG:4326.")
+    if config.get("search", {}).get("defaultMode") != "place":
+        ERRORS.append("Le mode de recherche par défaut doit être le géocodage IGN pris en charge.")
     if config.get("detector", {}).get("enabled") is not False:
         ERRORS.append("La détection IA française doit rester désactivée.")
     if config.get("storage", {}).get("maxImportBytes") != 20_971_520:
@@ -134,6 +136,14 @@ def main() -> int:
         except Exception as exc:
             ERRORS.append(f"XML invalide {relative}: {exc}")
 
+    if 'option value="megalith"' in html or "value='megalith'" in html:
+        ERRORS.append("Le mode POI mégalithe IGN non validé ne doit pas être exposé dans l’interface.")
+    if "Mégalithes IGN" in html:
+        ERRORS.append("L’interface ne doit pas présenter la recherche POI mégalithe comme disponible.")
+    if "Recherche du sous-type POI" not in js:
+        ERRORS.append("Le mode POI mégalithe doit rester explicitement déclaré désactivé.")
+    if "IGN — géocodage" not in js:
+        ERRORS.append("Le chemin de recherche de géocodage IGN doit rester identifiable.")
     if "overpass-api.de" not in js:
         ERRORS.append("Endpoint Overpass primaire absent.")
     if "saveOrShareFile" not in js:
