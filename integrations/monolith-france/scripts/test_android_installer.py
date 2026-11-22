@@ -76,6 +76,7 @@ def export_osmand_files(*args, **kwargs):
     pass
 def prepare_android_assets():
     web_out = REPO_ROOT / "android" / "app" / "src" / "main" / "assets" / "web"
+    updated_utc = "2026-01-01T00:00:00Z"
     docs_out = web_out / "docs"
     leaflet_out = web_out / "leaflet"
     if web_out.exists():
@@ -83,7 +84,7 @@ def prepare_android_assets():
     docs_out.mkdir(parents=True, exist_ok=True)
     leaflet_out.mkdir(parents=True, exist_ok=True)
     (web_out / "index.html").write_text("<html>UK atlas</html>", encoding="utf-8")
-    export_osmand_files(docs_out, updated_utc="2026-01-01T00:00:00Z", include_obf=False)
+    export_osmand_files(docs_out, updated_utc=updated_utc, include_obf=False)
     # MONOLITH_FRANCE_INTEGRATION_V2: module copied after the asset reset.
     france_src = REPO_ROOT / "integrations" / "monolith-france"
     if france_src.is_dir():
