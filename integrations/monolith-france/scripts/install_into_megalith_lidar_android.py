@@ -72,8 +72,8 @@ def main() -> int:
        'inputs.file(File(rootRepoDir, "scripts/export_osmand_plugin.py"))' not in grad:
         raise RuntimeError("Point d'entrée des inputs Gradle non reconnu.")
     start_re = re.compile(
-        r'(private\\s+const\\s+val\\s+START_URL\\s*=\\s*\\n?\\s*)'
-        r'"https://appassets\\.androidplatform\\.net/assets/web/index\\.html"'
+        r'(private\s+const\s+val\s+START_URL\s*=\s*\n?\s*)'
+        r'"https://appassets\.androidplatform\.net/assets/web/index\.html"'
     )
     start_url = "https://appassets.androidplatform.net/assets/web/france/web/index.html"
     if start_url not in at and not start_re.search(at):
@@ -134,7 +134,7 @@ def main() -> int:
         activity.write_text(patched, encoding="utf-8")
     st = strings.read_text(encoding="utf-8")
     if "Megalith LiDAR France" not in st:
-        updated, count = re.subn(r'(<string\\s+name="app_name"[^>]*>).*?(</string>)',
+        updated, count = re.subn(r'(<string\s+name="app_name"[^>]*>).*?(</string>)',
                                  r'\\1Megalith LiDAR France\\2', st, count=1, flags=re.S)
         if count != 1:
             raise RuntimeError("Ressource app_name introuvable.")
