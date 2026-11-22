@@ -81,6 +81,20 @@ def prepare_android_assets():
     leaflet_out.mkdir(parents=True, exist_ok=True)
     (web_out / "index.html").write_text("<html>UK atlas</html>", encoding="utf-8")
     export_osmand_files(docs_out, updated_utc="2026-01-01T00:00:00Z", include_obf=False)
+    # MONOLITH_FRANCE_INTEGRATION_V2: module copied after the asset reset.
+    france_src = REPO_ROOT / "integrations" / "monolith-france"
+    if france_src.is_dir():
+        france_out = web_out / "france"
+        if france_out.exists():
+            shutil.rmtree(france_out)
+        for folder in ("web", "config", "docs"):
+            shutil.copytree(france_src / folder, france_out / folder)
+        leaflet_images = web_out / "leaflet" / "images"
+        leaflet_images.mkdir(parents=True, exist_ok=True)
+        for image_name in ("layers.png", "layers-2x.png", "marker-icon.png",
+                           "marker-icon-2x.png", "marker-shadow.png"):
+            shutil.copy2(france_src / "web" / "vendor" / "images" / image_name,
+                         leaflet_images / image_name)
 if __name__ == "__main__":
     prepare_android_assets()
 '''
