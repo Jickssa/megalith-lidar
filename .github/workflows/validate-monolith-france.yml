@@ -76,10 +76,19 @@ jobs:
       - name: Install France module into Android project
         run: python integrations/monolith-france/scripts/install_into_megalith_lidar_android.py "$GITHUB_WORKSPACE" --force
       - name: Build Debug APK
+        shell: bash
         run: |
+          set -o pipefail
           chmod +x android/gradlew
-          cd android
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          ./android/gradlew -p android assembleDebug --no-daemon --stacktrace --warning-mode all 2>&1 | tee gradle-build.log
+      - name: Upload Gradle diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: monolith-france-gradle-diagnostics
+          path: gradle-build.log
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Verify APK contents, alignment and signature
         id: apk
         shell: bash
