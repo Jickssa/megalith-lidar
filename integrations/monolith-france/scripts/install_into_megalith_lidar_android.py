@@ -26,19 +26,22 @@ START_URL_PATTERN = re.compile(
 )
 
 
-def backup_once(path: Path) -> None:
-    backup = path.with_name(path.name + ".before-monolith-france.bak")
+def backup_once(path: Path, repo: Path) -> None:
+    # Keep backups out of Android source/resource trees: AGP scans res/values.
+    relative = path.resolve().relative_to(repo.resolve())
+    backup = repo / ".monolith-france-backups" / relative
+    backup.parent.mkdir(parents=True, exist_ok=True)
     if not backup.exists():
         shutil.copy2(path, backup)
 
 
-def replace_text_once(path: Path, old: str, new: str, marker: str) -> None:
+def replace_text_once(path: Path, repo: Path, old: str, new: str, marker: str) -> None:
     content = path.read_text(encoding="utf-8")
     if marker in content:
         return
     if old not in content:
         raise RuntimeError(f"Anchor not found in {path}: {old!r}")
-    backup_once(path)
+    backup_once(path, repo)
     path.write_text(content.replace(old, new, 1), encoding="utf-8")
 
 
@@ -170,7 +173,7 @@ def main() -> int:
 '''
     if hook_marker not in prepare_text:
         anchor = "    export_osmand_files(docs_out, updated_utc=updated_utc, include_obf=False)\n"
-        replace_text_once(prepare, anchor, anchor + hook, hook_marker)
+        replace_text_once(prepare, repo, anchor, anchor + hook, hook_marker)
 
     # Register the module folder as a task input so Gradle rebuilds assets when it changes.
     gradle_text = gradle.read_text(encoding="utf-8")
@@ -194,7 +197,7 @@ def main() -> int:
         )
         if count != 1:
             raise RuntimeError("Unable to update the expected START_URL declaration.")
-        backup_once(activity)
+        backup_once(activity, repo)
         activity.write_text(changed, encoding="utf-8")
 
     strings_text = strings.read_text(encoding="utf-8")
@@ -207,7 +210,7 @@ def main() -> int:
         )
         if count != 1:
             raise RuntimeError("Could not find app_name resource.")
-        backup_once(strings)
+        backup_once(strings, repo)
         strings.write_text(changed, encoding="utf-8")
 
     print("Installation completed. UK atlas remains accessible at /assets/web/index.html.")
