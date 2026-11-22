@@ -75,7 +75,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 def export_osmand_files(*args, **kwargs):
     pass
 def prepare_android_assets():
-    web_out = REPO_ROOT / "android/app/src/main/assets/web"
+    web_out = REPO_ROOT / "android" / "app" / "src" / "main" / "assets" / "web"
     docs_out = web_out / "docs"
     leaflet_out = web_out / "leaflet"
     if web_out.exists():
