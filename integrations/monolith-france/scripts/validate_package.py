@@ -148,9 +148,6 @@ def main() -> int:
         ERRORS.append("Endpoint Overpass primaire absent.")
     if "saveOrShareFile" not in js:
         ERRORS.append("Pont d'export natif non utilisé par le module.")
-    if "Recherche du sous-type POI" not in js:
-        WARNINGS.append("La recherche de POI mégalithiques IGN est volontairement désactivée.")
-
     if ERRORS:
         print("VALIDATION ÉCHOUÉE")
         print("\n".join(f"- {error}" for error in ERRORS))
