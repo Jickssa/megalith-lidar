@@ -118,10 +118,19 @@ if __name__ == "__main__":
         assert not (repo / "integrations/monolith-france").exists()
 
         invoke(repo)
-        # The source package is checked before the force reinstall; the fixture target is then reinstalled.
-        assert (ROOT / "web/index.html").is_file()
-        invoke(repo, "--force")
-        assert (ROOT / "web/index.html").is_file()
+        # Test --force with source == destination in a separate self-hosted fixture.
+        self_host = Path(tmp) / "self-hosted"
+        shutil.copytree(repo, self_host)
+        self_integration = self_host / "integrations/monolith-france"
+        if self_integration.exists():
+            shutil.rmtree(self_integration)
+        shutil.copytree(ROOT, self_integration)
+        self_installer = self_integration / "scripts/install_into_megalith_lidar_android.py"
+        subprocess.run([sys.executable, str(self_installer), str(self_host), "--force"], check=True)
+        for preserved in ("scripts/install_into_megalith_lidar_android.py", "README-INTEGRATION-FR.md", ".gitignore", "web/index.html"):
+            assert (self_integration / preserved).is_file(), preserved
+        self_hook = (self_host / "scripts/prepare_android_assets.py").read_text(encoding="utf-8")
+        assert self_hook.count("MONOLITH_FRANCE_INTEGRATION_V2") == 1
         assert "/assets/web/france/web/index.html" in activity.read_text(encoding="utf-8")
         assert "Megalith LiDAR France" in strings.read_text(encoding="utf-8")
         assert activity.with_name(activity.name + ".before-monolith-france.bak").exists()
