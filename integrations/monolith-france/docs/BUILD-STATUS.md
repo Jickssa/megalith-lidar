@@ -1,39 +1,67 @@
 # État de validation — Monolith France
 
-## État du dépôt
+## Références GitHub
 
 - Branche : `feature/monolith-france-1.1.0`.
-- PR : #1, brouillon, non fusionnée.
-- La branche `main` conserve le code amont ; cette PR ne la modifie pas.
-- Le module France est une interface cartographique expérimentale.
+- PR #1 : brouillon, ouverte, non fusionnée.
+- Branche `main` non modifiée.
+- Build initial validé sur le commit `175bbc22bcf8cd8c093d28539c36ec209c9d1c35`.
+- Workflow push #60 : succès.
+- Workflow pull request #61 : succès.
 
-## Vérifications effectivement observées
+## Build Android réellement effectué
 
-- Le précédent run GitHub Actions a exécuté et réussi le validateur de paquet.
-- Le contrôle syntaxique JavaScript a réussi.
-- Le job a échoué à l'étape de compilation Python, car le workflow appelait un chemin de tests inexistant : `integrations/monolith-france/tests/*.py`.
-- Le test a ensuite été déplacé/maintenu dans `integrations/monolith-france/scripts/test_android_installer.py`, et le workflow corrigé pour utiliser ce chemin.
-- Les runs GitHub Actions #33 (push) et #34 (pull request), sur le commit `edff1be5806e4cdaa3ba49952ad7ee5f6c053b45`, sont terminés avec la conclusion `success`.
+- Environnement GitHub Actions : Temurin JDK 17.0.21, Android Platform 35 et Build Tools 35.0.0.
+- Commande : `./gradlew assembleDebug --no-daemon --stacktrace`.
+- Installateur exécuté sur le véritable checkout Android avant Gradle.
+- APK Debug générée : `megalith-lidar-france-debug.apk`.
+- Taille APK : 18 994 407 octets.
+- SHA-256 : `fad8b092bd53cdb791ef036bb6f321adc48791e4115bc96bd48e637f0e292c78`.
+- ZIP interne : test CRC valide.
+- Ressources UK, France et Leaflet attendues présentes.
+- `zipalign -c -v 4` : succès.
+- `apksigner verify --verbose` : succès, signature APK v2 valide, un signataire.
+- Artefact GitHub Actions ID : `14776914469`, rétention annoncée jusqu'au 6 décembre 2026.
 
-## Tests non réputés exécutés
+## Validation CI
 
-- Compilation Gradle réelle de l'APK France.
-- Vérification de signature de l'APK final par `apksigner`.
-- Installation sur appareil ou émulateur Android.
-- Test interactif des couches WMTS et des appels de recherche depuis la WebView.
-- Validation de bout en bout de l'import/export GeoJSON depuis Android.
+- Workflow #60 (push) : succès.
+- Workflow #61 (pull request) : succès.
+- Validateur paquet, JavaScript, Python et test de régression installateur : succès.
+- Installateur exécuté sur le vrai projet Android : succès.
+- Génération des assets après nettoyage : vérifiée par fixture.
+- Réinstallation forcée et sauvegardes hors ressources Android : vérifiées.
 
-## Capacités et limites actuelles
+## Défaut détecté après inspection APK
 
-- La carte France, les fonds IGN/OSM, les commandes des couches LiDAR et le carnet local sont présents dans le module.
-- Les identifiants de couches WMTS n'ont pas encore été validés par une recette Android réelle.
-- La recherche géographique IGN doit être testée avec le service réel depuis WebView.
-- La recherche spécifique du sous-type POI mégalithe IGN est désactivée tant que la résolution catégorie/paramètre n'est pas confirmée.
-- La recherche OSM est disponible à la demande mais nécessite réseau et une emprise suffisamment zoomée.
-- Les observations sont stockées dans `localStorage` ; la persistance dépend de la configuration et du cycle de vie WebView, elle doit être testée sur appareil.
-- Les icônes Leaflet du paquet sont des PNG de repli transparents valides, pas les visuels graphiques originaux. Les remplacer par les ressources Leaflet officielles 1.9.4 avant livraison UI finale.
-- La CI statique ne compile pas l'APK : aucune compilation Gradle, signature APK, installation sur émulateur ou appareil n'a encore été réalisée dans cette session.
+L'interface embarquée exposait encore l'option « Mégalithes IGN », alors que le gestionnaire JavaScript refusait déjà cette recherche faute de schéma API IGN validé. Cette incohérence a été corrigée sur la branche de travail après le build #60 :
 
-## Prochaine validation Android
+- seuls les modes de géocodage IGN et de recherche OSM sont exposés ;
+- le mode par défaut est le géocodage IGN ;
+- le POI IGN « mégalithe » est présenté explicitement comme désactivé ;
+- le gestionnaire de recherche rejette tout mode non pris en charge ;
+- le validateur du paquet impose le mode par défaut `place` et l'absence de l'option POI non validée.
 
-Exécuter `scripts/integrate_and_build_codespace.sh` depuis un Codespace avec JDK 17 et Android SDK Platform 35 / Build Tools 35.0.0. Examiner les logs Gradle, vérifier les assets internes de l'APK, puis effectuer la recette appareil avant de sortir la PR du mode brouillon.
+**Ces derniers changements nécessitent une nouvelle exécution CI et une nouvelle APK ; le SHA APK ci-dessus correspond à la version précédente, qui n'intègre pas cette dernière correction UI.**
+
+## Fonctions non validées en conditions réelles
+
+- Installation et lancement sur téléphone ou émulateur Android.
+- Affichage réel des tuiles WMTS IGN et validation de la couverture pour une emprise donnée.
+- Géocodage IGN et requêtes Overpass depuis la WebView en réseau réel.
+- Permission et géolocalisation en fonctionnement.
+- Import GeoJSON par sélecteur Android et export via le pont natif.
+- Persistance des observations après arrêt/redémarrage.
+- Performance et gestion des erreurs réseau sur appareil.
+
+## Limites fonctionnelles connues
+
+- La recherche POI IGN dédiée au sous-type mégalithe reste désactivée jusqu'à validation du schéma API.
+- La détection IA française est désactivée ; aucun modèle britannique n'est réutilisé.
+- La couverture LiDAR HD est progressive.
+- Les icônes PNG Leaflet du paquet sont des images de repli, pas les icônes officielles finales.
+- Les appels cartographiques et de recherche nécessitent une connexion réseau.
+
+## Prochaine étape
+
+Exécuter GitHub Actions sur la dernière tête de branche, regénérer l'APK après la correction UI, vérifier son SHA et ses signatures, puis procéder à la recette appareil avant de déclarer la PR prête.
