@@ -106,6 +106,7 @@ if __name__ == "__main__":
         write(gradle, '''val prepareWebAssets by tasks.registering(Exec::class) {
     val rootRepoDir = rootProject.projectDir.parentFile
     inputs.file(File(rootRepoDir, "scripts/prepare_android_assets.py"))
+    inputs.file(File(rootRepoDir, "scripts/export_osmand_plugin.py"))
     outputs.dir(file("src/main/assets/web"))
 }
 ''')
