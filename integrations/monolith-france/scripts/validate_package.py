@@ -1,24 +1,151 @@
 #!/usr/bin/env python3
-"""Contrôles statiques avant intégration."""
-import json,sys
+"""Validate Monolith France package structure, metadata and local assets."""
+from __future__ import annotations
+
+import json
+import re
+import sys
 from pathlib import Path
-from xml.etree import ElementTree as ET
-R=Path(__file__).resolve().parents[1]; errors=[]
-def load(p):
- try:return json.loads((R/p).read_text(encoding='utf-8'))
- except Exception as e:errors.append(f'{p}: {e}');return {}
-c=load('config/france-config.json'); s=load('config/data-sources.json'); load('config/archaeology-taxonomy.fr.json')
-h=(R/'web/index.html').read_text(); j=(R/'web/app.js').read_text()
-if c.get('country')!='FR' or c.get('locale')!='fr-FR':errors.append('Territoire/langue incorrects')
-if c.get('detector',{}).get('enabled') is not False:errors.append('Détection IA doit rester désactivée')
-for k in ('IGNF_LIDAR-HD_MNT','IGNF_LIDAR-HD_MNS','IGNF_LIDAR-HD_MNH'):
- if k not in json.dumps(s):errors.append('Couche manquante '+k)
-for p in ('/assets/web/leaflet/leaflet.css','/assets/web/leaflet/leaflet.js'):
- if p not in h:errors.append('Ressource absente '+p)
-if '/assets/web/france/config/france-config.json' not in j:errors.append('URL config absente')
-if 'overpass-api.de' not in j or 'saveOrShareFile' not in j:errors.append('Recherche OSM / export absent')
-for p in ('android/AndroidManifest-fragment.xml','android/file-provider-manifest-snippet.xml','android/res/xml/monolith_france_file_paths.xml'):
- try:ET.parse(R/p)
- except Exception as e:errors.append(f'XML {p}: {e}')
-if errors:print('ECHEC\n'+'\n'.join(errors));sys.exit(1)
-print('OK — configs, sources IGN, ressources, UI, export et XML.')
+from xml.etree import ElementTree
+from zipfile import BadZipFile
+
+ROOT = Path(__file__).resolve().parents[1]
+ERRORS: list[str] = []
+WARNINGS: list[str] = []
+
+
+def read_text(relative: str) -> str:
+    path = ROOT / relative
+    try:
+        return path.read_text(encoding="utf-8")
+    except Exception as exc:
+        ERRORS.append(f"{relative}: {exc}")
+        return ""
+
+
+def read_json(relative: str):
+    try:
+        return json.loads(read_text(relative))
+    except Exception as exc:
+        ERRORS.append(f"{relative}: JSON invalide ({exc})")
+        return {}
+
+
+def main() -> int:
+    config = read_json("config/france-config.json")
+    sources = read_json("config/data-sources.json")
+    taxonomy = read_json("config/archaeology-taxonomy.fr.json")
+    html = read_text("web/index.html")
+    js = read_text("web/app.js")
+    css = read_text("web/styles.css")
+
+    if config.get("country") != "FR" or config.get("locale") != "fr-FR":
+        ERRORS.append("Territoire ou locale incorrects.")
+    if config.get("coordinateReferenceSystem") != "EPSG:4326":
+        ERRORS.append("Le CRS attendu pour l'interface doit être EPSG:4326.")
+    if config.get("detector", {}).get("enabled") is not False:
+        ERRORS.append("La détection IA française doit rester désactivée.")
+    if config.get("storage", {}).get("maxImportBytes") != 20_971_520:
+        ERRORS.append("Limite d'import GeoJSON inattendue.")
+    if not isinstance(taxonomy, dict) or not taxonomy:
+        ERRORS.append("Taxonomie archéologique vide ou invalide.")
+
+    source_text = json.dumps(sources, ensure_ascii=False)
+    for layer in ("IGNF_LIDAR-HD_MNT", "IGNF_LIDAR-HD_MNS", "IGNF_LIDAR-HD_MNH"):
+        if layer not in source_text:
+            ERRORS.append(f"Couche de données absente : {layer}")
+
+    # Assert every internal URL used in HTML is present in the known runtime layout.
+    for required in (
+        "/assets/web/leaflet/leaflet.css",
+        "/assets/web/france/web/styles.css",
+        "/assets/web/leaflet/leaflet.js",
+        "/assets/web/france/web/app.js",
+        "/assets/web/france/config/france-config.json",
+    ):
+        if required not in html and required not in js:
+            ERRORS.append(f"Référence locale attendue absente : {required}")
+
+    for local in (
+        "web/index.html",
+        "web/app.js",
+        "web/styles.css",
+        "config/france-config.json",
+        "config/data-sources.json",
+        "config/archaeology-taxonomy.fr.json",
+        "docs/AUDIT-TECHNIQUE.md",
+    ):
+        if not (ROOT / local).is_file():
+            ERRORS.append(f"Fichier requis absent : {local}")
+
+    # All local CSS/JS/image references in the France module must resolve.
+    for source, text in (("web/index.html", html), ("web/app.js", js), ("web/styles.css", css)):
+        if source == "web/index.html":
+            refs = re.findall(r'''(?:src|href)=["']([^"']+)["']''', text)
+        elif source == "web/styles.css":
+            refs = re.findall(r'''url\(["']?([^"')]+)''', text)
+        else:
+            refs = []
+        for ref in refs:
+            if ref.startswith(("https://", "http://", "data:", "#", "/assets/web/leaflet/")):
+                continue
+            if ref.startswith("/assets/web/france/"):
+                relative = ref.removeprefix("/assets/web/france/")
+                if not (ROOT / relative).exists():
+                    ERRORS.append(f"{source}: ressource référencée absente : {ref}")
+            elif not ref.startswith(("mailto:", "tel:", "javascript:")):
+                candidate = (ROOT / source).parent / ref
+                if not candidate.exists():
+                    ERRORS.append(f"{source}: ressource relative absente : {ref}")
+
+    # Leaflet PNG placeholders are checked with an actual decoder, not only a magic header.
+    try:
+        from PIL import Image
+    except ImportError:
+        ERRORS.append("Pillow absent : impossible de valider réellement les PNG.")
+    else:
+        for name in (
+            "layers.png", "layers-2x.png", "marker-icon.png",
+            "marker-icon-2x.png", "marker-shadow.png",
+        ):
+            path = ROOT / "web/vendor/images" / name
+            if not path.is_file():
+                ERRORS.append(f"Image Leaflet absente : {path.relative_to(ROOT)}")
+                continue
+            try:
+                with Image.open(path) as image:
+                    image.verify()
+            except Exception as exc:
+                ERRORS.append(f"PNG illisible {name}: {exc}")
+
+    for relative in (
+        "android/AndroidManifest-fragment.xml",
+        "android/file-provider-manifest-snippet.xml",
+        "android/res/xml/monolith_france_file_paths.xml",
+    ):
+        path = ROOT / relative
+        try:
+            ElementTree.parse(path)
+        except Exception as exc:
+            ERRORS.append(f"XML invalide {relative}: {exc}")
+
+    if "overpass-api.de" not in js:
+        ERRORS.append("Endpoint Overpass primaire absent.")
+    if "saveOrShareFile" not in js:
+        ERRORS.append("Pont d'export natif non utilisé par le module.")
+    if "Recherche du sous-type POI" not in js:
+        WARNINGS.append("La recherche de POI mégalithiques IGN est volontairement désactivée.")
+
+    if ERRORS:
+        print("VALIDATION ÉCHOUÉE")
+        print("\n".join(f"- {error}" for error in ERRORS))
+        return 1
+    print("VALIDATION STATIQUE OK")
+    if WARNINGS:
+        print("AVERTISSEMENTS")
+        print("\n".join(f"- {warning}" for warning in WARNINGS))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
