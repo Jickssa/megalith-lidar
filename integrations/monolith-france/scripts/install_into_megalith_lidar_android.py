@@ -182,6 +182,7 @@ def main() -> int:
         gradle_anchor = '    inputs.file(File(rootRepoDir, "scripts/export_osmand_plugin.py"))\n'
         replace_text_once(
             gradle,
+            repo,
             gradle_anchor,
             gradle_anchor + "    " + gradle_marker + "\n",
             gradle_marker,
