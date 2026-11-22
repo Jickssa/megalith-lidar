@@ -150,12 +150,21 @@ if __name__ == "__main__":
         assert (assets / "index.html").read_text(encoding="utf-8") == "<html>UK atlas</html>"
         assert (assets / "france/web/index.html").is_file()
         assert (assets / "france/config/france-config.json").is_file()
-        for name in IMAGE_NAMES:
+        expected_sizes = {
+            "layers.png": (26, 26),
+            "layers-2x.png": (52, 52),
+            "marker-icon.png": (25, 41),
+            "marker-icon-2x.png": (50, 82),
+            "marker-shadow.png": (41, 41),
+        }
+        from PIL import Image
+        for name, expected_size in expected_sizes.items():
             target = assets / "leaflet/images" / name
-            assert target.is_file() and target.stat().st_size > 60
-            from PIL import Image
+            assert target.is_file(), name
             with Image.open(target) as image:
-                image.verify()
+                assert image.size == expected_size, (name, image.size, expected_size)
+                image.load()
+                assert image.convert("RGBA").getchannel("A").getbbox() is not None, name
         assert prep_text.count("MONOLITH_FRANCE_INTEGRATION_V2") == 1
         print("PASS — dry-run, backups, START_URL, forced re-install, post-cleanup asset generation.")
     return 0

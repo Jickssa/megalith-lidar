@@ -111,17 +111,28 @@ def main() -> int:
     except ImportError:
         ERRORS.append("Pillow absent : impossible de valider réellement les PNG.")
     else:
-        for name in (
-            "layers.png", "layers-2x.png", "marker-icon.png",
-            "marker-icon-2x.png", "marker-shadow.png",
-        ):
+        expected_sizes = {
+            "layers.png": (26, 26),
+            "layers-2x.png": (52, 52),
+            "marker-icon.png": (25, 41),
+            "marker-icon-2x.png": (50, 82),
+            "marker-shadow.png": (41, 41),
+        }
+        for name, expected_size in expected_sizes.items():
             path = ROOT / "web/vendor/images" / name
             if not path.is_file():
                 ERRORS.append(f"Image Leaflet absente : {path.relative_to(ROOT)}")
                 continue
             try:
                 with Image.open(path) as image:
-                    image.verify()
+                    if image.size != expected_size:
+                        ERRORS.append(
+                            f"Dimensions PNG Leaflet incorrectes {name}: "
+                            f"{image.size}, attendu {expected_size}"
+                        )
+                    image.load()
+                    if image.convert("RGBA").getchannel("A").getbbox() is None:
+                        ERRORS.append(f"Image Leaflet entièrement transparente : {name}")
             except Exception as exc:
                 ERRORS.append(f"PNG illisible {name}: {exc}")
 
