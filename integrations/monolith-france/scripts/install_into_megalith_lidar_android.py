@@ -6,6 +6,7 @@ import argparse
 import re
 import shutil
 import sys
+import tempfile
 from pathlib import Path
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[1]
@@ -132,11 +133,16 @@ def main() -> int:
         print("DRY-RUN OK: Android host, WebView, permissions, Leaflet, Gradle, and PNG assets.")
         return 0
 
-    if integration.exists():
-        shutil.rmtree(integration)
-    integration.mkdir(parents=True)
-    for folder in ("web", "config", "docs"):
-        shutil.copytree(PACKAGE_ROOT / folder, integration / folder)
+    # Stage the source before replacing the destination. This is essential when
+    # PACKAGE_ROOT itself is integrations/monolith-france in the repository checkout.
+    with tempfile.TemporaryDirectory(prefix="monolith-france-stage-") as staging_dir:
+        staged = Path(staging_dir) / "monolith-france"
+        staged.mkdir(parents=True)
+        for folder in ("web", "config", "docs"):
+            shutil.copytree(PACKAGE_ROOT / folder, staged / folder)
+        if integration.exists():
+            shutil.rmtree(integration)
+        shutil.copytree(staged, integration)
 
     # Inject the module at the very end of the upstream asset-generation function.
     hook_marker = "MONOLITH_FRANCE_INTEGRATION_V2"
