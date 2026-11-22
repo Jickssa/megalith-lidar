@@ -140,9 +140,15 @@ def main() -> int:
         staged.mkdir(parents=True)
         for folder in ("web", "config", "docs"):
             shutil.copytree(PACKAGE_ROOT / folder, staged / folder)
-        if integration.exists():
-            shutil.rmtree(integration)
-        shutil.copytree(staged, integration)
+
+        # Replace only runtime trees. Preserve scripts, README, manifests and metadata
+        # when the source package is also the destination directory.
+        integration.mkdir(parents=True, exist_ok=True)
+        for folder in ("web", "config", "docs"):
+            destination = integration / folder
+            if destination.exists():
+                shutil.rmtree(destination)
+            shutil.copytree(staged / folder, destination)
 
     # Inject the module at the very end of the upstream asset-generation function.
     hook_marker = "MONOLITH_FRANCE_INTEGRATION_V2"
