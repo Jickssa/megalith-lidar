@@ -13,7 +13,7 @@
 - Le contrôle syntaxique JavaScript a réussi.
 - Le job a échoué à l'étape de compilation Python, car le workflow appelait un chemin de tests inexistant : `integrations/monolith-france/tests/*.py`.
 - Le test a ensuite été déplacé/maintenu dans `integrations/monolith-france/scripts/test_android_installer.py`, et le workflow corrigé pour utiliser ce chemin.
-- Un nouvel essai Actions reste à examiner avant de déclarer la CI verte.
+- Les runs GitHub Actions #33 (push) et #34 (pull request), sur le commit `edff1be5806e4cdaa3ba49952ad7ee5f6c053b45`, sont terminés avec la conclusion `success`.
 
 ## Tests non réputés exécutés
 
@@ -31,8 +31,8 @@
 - La recherche spécifique du sous-type POI mégalithe IGN est désactivée tant que la résolution catégorie/paramètre n'est pas confirmée.
 - La recherche OSM est disponible à la demande mais nécessite réseau et une emprise suffisamment zoomée.
 - Les observations sont stockées dans `localStorage` ; la persistance dépend de la configuration et du cycle de vie WebView, elle doit être testée sur appareil.
-- Les icônes Leaflet du paquet sont des PNG de repli, pas les visuels de marque originaux ; ils doivent être remplacés par les ressources officielles Leaflet sous licence adéquate avant livraison UI finale.
-- Aucun APK final n'est joint ou annoncé ici.
+- Les icônes Leaflet du paquet sont des PNG de repli transparents valides, pas les visuels graphiques originaux. Les remplacer par les ressources Leaflet officielles 1.9.4 avant livraison UI finale.
+- La CI statique ne compile pas l'APK : aucune compilation Gradle, signature APK, installation sur émulateur ou appareil n'a encore été réalisée dans cette session.
 
 ## Prochaine validation Android
 
