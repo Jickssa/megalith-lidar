@@ -15,15 +15,18 @@ command -v python3 >/dev/null || { echo "Python 3 requis" >&2; exit 3; }
 command -v node >/dev/null || { echo "Node.js requis" >&2; exit 3; }
 
 # All preflight checks happen before editing the target checkout.
-python3 -m pip install --user 'Pillow>=10.0'
-python3 "$PACKAGE_ROOT/scripts/validate_package.py"
+VENV_DIR="${TMPDIR:-/tmp}/monolith-france-build-venv"
+python3 -m venv "$VENV_DIR"
+PYTHON="$VENV_DIR/bin/python"
+"$PYTHON" -m pip install --disable-pip-version-check "Pillow>=10,<13"
+"$PYTHON" "$PACKAGE_ROOT/scripts/validate_package.py"
 node --check "$PACKAGE_ROOT/web/app.js"
-python3 -m py_compile "$PACKAGE_ROOT"/scripts/*.py
-python3 "$PACKAGE_ROOT/scripts/test_android_installer.py"
+"$PYTHON" -m py_compile "$PACKAGE_ROOT"/scripts/*.py
+"$PYTHON" "$PACKAGE_ROOT/scripts/test_android_installer.py"
 
 INSTALL_ARGS=("$TARGET_REPO")
 if [[ "${FORCE_INTEGRATION:-0}" == "1" ]]; then INSTALL_ARGS+=(--force); fi
-python3 "$PACKAGE_ROOT/scripts/install_into_megalith_lidar_android.py" "${INSTALL_ARGS[@]}"
+"$PYTHON" "$PACKAGE_ROOT/scripts/install_into_megalith_lidar_android.py" "${INSTALL_ARGS[@]}"
 
 SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
 [[ -n "$SDK_ROOT" && -d "$SDK_ROOT" ]] || {
