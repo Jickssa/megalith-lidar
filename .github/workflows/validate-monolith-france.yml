@@ -1,4 +1,4 @@
-name: Validate Monolith France module
+name: Validate and build Monolith France
 
 on:
   pull_request:
@@ -17,6 +17,7 @@ permissions:
 
 jobs:
   static-validation:
+    name: Static validation and installer regression
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -39,3 +40,80 @@ jobs:
         run: python -m py_compile integrations/monolith-france/scripts/*.py
       - name: Installer regression fixture
         run: python integrations/monolith-france/scripts/test_android_installer.py
+
+  android-debug-build:
+    name: Android Debug APK build
+    runs-on: ubuntu-latest
+    needs: static-validation
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+      - name: Install Android SDK packages
+        run: |
+          yes | sdkmanager --licenses >/dev/null
+          sdkmanager "platforms;android-35" "build-tools;35.0.0" "platform-tools"
+      - name: Install Python validation dependency
+        run: python -m pip install --disable-pip-version-check "Pillow>=10,<13"
+      - name: Install France module into Android project
+        run: python integrations/monolith-france/scripts/install_into_megalith_lidar_android.py "$GITHUB_WORKSPACE"
+      - name: Build Debug APK
+        run: |
+          chmod +x android/gradlew
+          cd android
+          ./gradlew assembleDebug --no-daemon --stacktrace
+      - name: Verify APK contents, alignment and signature
+        id: apk
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="android/app/build/outputs/apk/debug/app-debug.apk"
+          test -s "$APK"
+          python - "$APK" <<'PY'
+          from zipfile import ZipFile
+          import sys
+          apk = sys.argv[1]
+          required = (
+              "assets/web/france/web/index.html",
+              "assets/web/france/web/app.js",
+              "assets/web/france/config/france-config.json",
+              "assets/web/leaflet/leaflet.js",
+              "assets/web/leaflet/leaflet.css",
+              "assets/web/index.html",
+          )
+          with ZipFile(apk) as z:
+              bad = z.testzip()
+              if bad:
+                  raise SystemExit(f"APK ZIP CRC failure: {bad}")
+              names = set(z.namelist())
+              missing = [name for name in required if name not in names]
+              if missing:
+                  raise SystemExit("APK assets missing:\n" + "\n".join(missing))
+          print("APK archive integrity and required UK/France assets: OK")
+          PY
+          "$ANDROID_HOME/build-tools/35.0.0/zipalign" -c -v 4 "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$APK"
+          mkdir -p dist
+          cp "$APK" dist/megalith-lidar-france-debug.apk
+          (cd dist && sha256sum megalith-lidar-france-debug.apk > megalith-lidar-france-debug.apk.sha256)
+          cat dist/megalith-lidar-france-debug.apk.sha256
+      - name: Upload Debug APK and checksum
+        uses: actions/upload-artifact@v4
+        with:
+          name: megalith-lidar-france-debug
+          path: |
+            dist/megalith-lidar-france-debug.apk
+            dist/megalith-lidar-france-debug.apk.sha256
+          if-no-files-found: error
+          retention-days: 14
