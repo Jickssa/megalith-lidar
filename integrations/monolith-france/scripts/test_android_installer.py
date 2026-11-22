@@ -129,10 +129,6 @@ if __name__ == "__main__":
 
         # Execute the same source preparation logic after the installer has patched it.
         invoke(repo, "--force")
-        module_target = repo / "integrations/monolith-france"
-        module_target.mkdir(parents=True, exist_ok=True)
-        for folder in ("web", "config", "docs"):
-            shutil.copytree(ROOT / folder, module_target / folder)
         subprocess.run([sys.executable, str(prepare)], check=True)
         assets = repo / "android/app/src/main/assets/web"
         assert (assets / "index.html").read_text(encoding="utf-8") == "<html>UK atlas</html>"
