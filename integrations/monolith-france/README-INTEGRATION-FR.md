@@ -4,7 +4,7 @@
 **Langue / territoire initial :** français / France métropolitaine  
 **Cible :** intégration dans une APK Android hôte nommée « Monolith » via `WebViewAssetLoader`.
 
-Ce module fournit une interface cartographique mobile, des couches IGN LiDAR HD, la recherche de sites documentés dans les POI de la Géoplateforme et OpenStreetMap, ainsi qu'un carnet de prospection local exportable en GeoJSON.
+Ce module fournit une interface cartographique mobile, des couches IGN LiDAR HD, le géocodage de lieux/adresses par la Géoplateforme, la recherche OSM à l'échelle de l'emprise courante et un carnet de prospection local importable/exportable en GeoJSON. La recherche dédiée au sous-type POI « mégalithe » de l'IGN est actuellement désactivée : son schéma de catégorie et de filtrage n'est pas encore validé.
 
 ## Contenu
 - `web/` : interface, carte Leaflet, recherche IGN / OSM et carnet de terrain.
@@ -42,9 +42,9 @@ Elle prépare les ressources, exécute les contrôles, lance `assembleDebug`, pu
 1. France métropolitaine, locale `fr-FR`, coordonnées WGS84.
 2. Fonds Plan IGN v2 et OpenStreetMap.
 3. Couches IGN LiDAR HD MNT, MNS et MNH via WMTS.
-4. Recherche des POI mégalithiques via découverte du sous-type dans les capacités de l'API IGN.
-5. Recherche d'adresses et de lieux via le géocodeur de la Géoplateforme.
-6. Recherche OSM de sites archéologiques dans l'emprise cartographique.
+4. Recherche dédiée des POI mégalithiques IGN : désactivée dans cette version tant que le paramètre de catégorie et le schéma API ne sont pas vérifiés.
+5. Recherche d'adresses et de lieux via le géocodeur de la Géoplateforme (à tester en ligne dans la WebView Android).
+6. Recherche OSM de sites archéologiques dans l'emprise cartographique (données contributives non exhaustives, résultats à recouper).
 7. Géolocalisation à la demande ; relevés sauvegardés localement ; import/export GeoJSON.
 
 ## Limites scientifiques
