@@ -94,8 +94,6 @@ if __name__ == "__main__":
         write(strings, '<resources><string name="app_name">Megalith LiDAR</string></resources>\n')
 
         # Real image files are read from the checked-in package and must decode.
-        pillow = shutil.which("python3")
-        assert pillow
         dry = invoke(repo, "--dry-run")
         assert "DRY-RUN OK" in dry
         assert not (repo / "integrations/monolith-france").exists()
@@ -120,6 +118,9 @@ if __name__ == "__main__":
         for name in IMAGE_NAMES:
             target = assets / "leaflet/images" / name
             assert target.is_file() and target.stat().st_size > 60
+            from PIL import Image
+            with Image.open(target) as image:
+                image.verify()
         assert prep_text.count("MONOLITH_FRANCE_INTEGRATION_V2") == 1
         print("PASS — dry-run, backups, START_URL, forced re-install, post-cleanup asset generation.")
     return 0
