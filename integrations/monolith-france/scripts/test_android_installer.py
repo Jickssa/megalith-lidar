@@ -129,12 +129,15 @@ if __name__ == "__main__":
         subprocess.run([sys.executable, str(self_installer), str(self_host), "--force"], check=True)
         for preserved in ("scripts/install_into_megalith_lidar_android.py", "README-INTEGRATION-FR.md", ".gitignore", "web/index.html"):
             assert (self_integration / preserved).is_file(), preserved
+        assert not list((self_host / "android/app/src/main/res").rglob("*.bak"))
         self_hook = (self_host / "scripts/prepare_android_assets.py").read_text(encoding="utf-8")
         assert self_hook.count("MONOLITH_FRANCE_INTEGRATION_V2") == 1
         assert "/assets/web/france/web/index.html" in activity.read_text(encoding="utf-8")
         assert "Megalith LiDAR France" in strings.read_text(encoding="utf-8")
-        assert activity.with_name(activity.name + ".before-monolith-france.bak").exists()
-        assert strings.with_name(strings.name + ".before-monolith-france.bak").exists()
+        backup_root = repo / ".monolith-france-backups"
+        assert (backup_root / "android/app/src/main/java/uk/megalith/lidar/MainActivity.kt").is_file()
+        assert (backup_root / "android/app/src/main/res/values/strings.xml").is_file()
+        assert not list((repo / "android/app/src/main/res").rglob("*.bak"))
         assert "integrations/monolith-france" in gradle.read_text(encoding="utf-8")
         prep_text = prepare.read_text(encoding="utf-8")
         assert prep_text.count("MONOLITH_FRANCE_INTEGRATION_V2") == 1
