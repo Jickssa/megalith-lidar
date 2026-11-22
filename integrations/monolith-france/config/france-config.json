@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "1.0",
+  "country": "FR",
+  "countryName": "France",
+  "locale": "fr-FR",
+  "coordinateReferenceSystem": "EPSG:4326",
+  "defaultMap": {"center": [46.6034, 1.8883], "zoom": 6, "minZoom": 4, "maxZoom": 19},
+  "search": {"defaultMode": "megalith", "maxResults": 250, "osmMinimumZoom": 8},
+  "detector": {"enabled": false, "reason": "Aucun modèle entraîné et validé sur des données archéologiques françaises n'est fourni."},
+  "storage": {"observationsKey": "monolith.france.observations.v1", "maxImportBytes": 20971520, "maxFeatures": 5000}
+}
