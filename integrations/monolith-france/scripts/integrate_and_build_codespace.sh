@@ -11,7 +11,7 @@ command -v node >/dev/null || { echo "Node.js requis" >&2; exit 3; }
 python3 "$PACKAGE_ROOT/scripts/validate_package.py"
 node --check "$PACKAGE_ROOT/web/app.js"
 python3 -m py_compile "$PACKAGE_ROOT/scripts"/*.py "$PACKAGE_ROOT/tests"/*.py
-python3 "$PACKAGE_ROOT/tests/test_android_installer.py"
+python3 "$PACKAGE_ROOT/scripts/test_android_installer.py"
 python3 "$PACKAGE_ROOT/scripts/install_into_megalith_lidar_android.py" "$TARGET_REPO" ${FORCE_INTEGRATION:+--force}
 python3 -c 'import PIL' >/dev/null 2>&1 || python3 -m pip install --user 'Pillow>=10.0'
 SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
