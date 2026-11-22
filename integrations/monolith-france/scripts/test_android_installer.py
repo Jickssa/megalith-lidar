@@ -50,6 +50,9 @@ def main() -> int:
 class MainActivity {
     fun saveOrShareFile(filename: String, mimeType: String, content: String) {}
     fun setup() {
+        val assetLoader = WebViewAssetLoader.Builder()
+            .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(this))
+            .build()
         setGeolocationEnabled(true)
         webView.addJavascriptInterface(AndroidBridge(), "MegalithAndroid")
     }
