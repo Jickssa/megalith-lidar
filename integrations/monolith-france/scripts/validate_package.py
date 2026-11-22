@@ -89,10 +89,15 @@ def main() -> int:
         for ref in refs:
             if ref.startswith(("https://", "http://", "data:", "#", "/assets/web/leaflet/")):
                 continue
+            if ref == "/assets/web/index.html":
+                # Deliberate link to the upstream UK atlas in the host APK.
+                continue
             if ref.startswith("/assets/web/france/"):
                 relative = ref.removeprefix("/assets/web/france/")
                 if not (ROOT / relative).exists():
                     ERRORS.append(f"{source}: ressource référencée absente : {ref}")
+            elif ref.startswith("/"):
+                ERRORS.append(f"{source}: chemin absolu hors périmètre du module : {ref}")
             elif not ref.startswith(("mailto:", "tel:", "javascript:")):
                 candidate = (ROOT / source).parent / ref
                 if not candidate.exists():
