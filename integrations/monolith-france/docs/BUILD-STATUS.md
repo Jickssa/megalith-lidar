@@ -1,45 +1,32 @@
-# État de validation — Monolith France
+# État de validation — Monolith International
 
-## 1.2.4 — build validé
+## Version 1.3.0 — tranche de recherche française
 
-- Branche : `feature/monolith-france-1.1.0`
-- Commit source fonctionnel : `bcbbed71345df0ee7ee09eb53bbf58a3c87bb26b`
-- Workflow GitHub Actions push #146 : succès complet — https://github.com/Jickssa/megalith-lidar/actions/runs/45154564962
-- Validation du paquet, syntaxe JS/Python, tests Node et fixture de l'installateur : succès.
-- Gradle `assembleDebug` : succès.
-- Vérification du contenu APK, `zipalign` et `apksigner verify` : succès.
-- APK : 19 024 313 octets, 97 entrées ZIP, aucune erreur CRC.
-- SHA-256 APK : `34804ea112838dfced2260801b262f6e186e75af1d588427b3e113ea7654677a`.
-- Artefact CI ID `14807004053`, taille archive 18 984 152 octets, digest SHA-256 `5fa1fad050c6a1f9e09dd1932679110e3541195351588a934071789147450bd6`.
-- Artefact : https://github.com/Jickssa/megalith-lidar/actions/runs/45154564962/artifacts/14807004053
+Branche dédiée : `feature/monolith-international-next`  
+Branche de départ : `fa3d5d34cbfb1cb386bf261eaa40ab1cfa2e2729` (HEAD vérifié de la PR #1 au démarrage).
 
-### Navigation et adaptation territoriale
+### Travail implémenté dans cette tranche
 
-- L'installateur règle le démarrage Android sur `/assets/web/atlas-home.html`.
-- Sélecteur → Atlas France : `/assets/web/france/web/index.html`.
-- Sélecteur → Atlas UK : `/assets/web/index.html`, interface cartographique historique.
-- Atlas UK → sélecteur ; Atlas UK → Atlas France. Aucun lien ne recharge inutilement la carte UK.
-- L'introduction UK (`uk-home.html`) est en français ; la carte UK historique reste en anglais.
-- L'interface de l'Atlas France est en français.
+- Taxonomie française déclarative de six familles, reliée à la recherche OSM.
+- Sélecteur de catégorie archéologique dans l'interface France.
+- Générateur Overpass basé sur la catégorie, le texte de recherche et l'emprise actuelle.
+- Prise en charge nodes, ways et relations ; normalisation des centres géométriques et liens OSM.
+- Limitation de l'emprise, annulation des recherches antérieures, rejet des réponses périmées.
+- Déclaration corrigée de l'autocomplétion POI IGN : `/geocodage/completion/`, type `poiType` attendu depuis GetCapabilities.
+- Validateur et CI renforcés ; les chemins Android, le préparateur d'assets et l'index UK déclenchent désormais le workflow.
+- Manifeste aligné sur la version 1.3.0.
 
-### Recherche et couches
+### Travail restant
 
-- Géocodage IGN direct filtré par `terr=METROPOLE`, avec plafond de 30 résultats contrôlé par configuration.
-- Seuil minimal de zoom de la recherche OSM lu depuis la configuration ; valeur validée : 8.
-- Les paramètres et les routes produites sont couverts par les tests unitaires JavaScript.
-- Identifiants des couches Plan IGN v2 et LiDAR HD MNT/MNS/MNH recoupés dans la documentation actuelle de l'IGN/Géoplateforme.
-- La couverture LiDAR HD reste progressive ; une couche sans tuiles sur une zone n'indique pas l'absence de données archéologiques.
+- Sélecteur international pays/langue indépendant et persistant.
+- Profils territoriaux indépendants et schéma de contribution communautaire.
+- Interface France reprenant réellement les fonctions STEP 1, STEP 2 et STEP 3 de l'original.
+- Inspecteur de site, vues diagnostiques et carnet enrichi.
+- Validation réelle de l'autocomplétion POI IGN et de la découverte des capacités.
+- Tests d'intégration réseau et contrôle WMTS réel dans WebView.
+- Recette physique Android.
+- Contrôle de signature avec l'application installée.
 
-### Durcissement Android
+### Validation
 
-- PNG diagnostic : 8 Mio maximum par fichier, MIME et signature contrôlés, redirections désactivées.
-- Cache diagnostic : 64 Mio maximum, 24 fichiers, expiration à 30 jours, nettoyage des temporaires.
-- Pont d'export : taille et MIME bornés, écriture asynchrone et nom temporaire unique.
-
-## Recette encore nécessaire
-
-La compilation et les vérifications d'archive ne remplacent pas une recette sur téléphone. Aucun appareil Android ni émulateur n'était accessible dans l'environnement de développement. Restent à tester : démarrage réel, navigation tactile, géolocalisation, import/export GeoJSON, appels réseau IGN/OSM et comportements portrait/paysage.
-
-La comparaison des certificats de signature entre l'APK installée et l'APK Debug n'est pas démontrée. Ne pas désinstaller l'application existante sans avoir sauvegardé les relevés ; une signature différente empêcherait une mise à jour par-dessus l'installation existante.
-
-La PR #1 reste ouverte en brouillon, non fusionnée. La branche cible `main` est toujours au SHA `ba08b3346895472dd68c27ab5435d614cec64356` ; aucun commit n'y a été poussé.
+Aucune compilation 1.3.0 n'est déclarée réussie à ce stade. Les anciens artefacts 1.2.4 ne doivent pas être présentés comme construits depuis cette branche.
