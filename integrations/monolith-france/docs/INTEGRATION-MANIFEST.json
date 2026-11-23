@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "module": "monolith-france",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "branch": "feature/monolith-international-next",
-  "note": "1.3.0 adds taxonomy-driven French archaeological OSM search, corrected IGN POI autocomplete metadata, and CI coverage for Android host/upstream asset changes. The international country/language selector, full France STEP 1–3 parity, validated IGN POI discovery and physical Android testing remain planned."
+  "note": "1.3.1 refines French archaeological OSM search with compound documented tag rules, category-specific name/reference/subtype fields, deduplication and literal regex escaping. The international country/language selector, contributor country profiles, full France STEP 1–3 parity, live IGN POI type discovery, live network validation and physical Android testing remain planned."
 }
