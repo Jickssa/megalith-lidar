@@ -83,7 +83,7 @@ function buildOverpassQuery({bounds,category,taxonomy,query,limit=1200}){
  if(!selected)throw Error('Catégorie archéologique inconnue : '+category);
  const bbox=[box.south,box.west,box.north,box.east].join(',');
  const text=String(query||'').trim();
- const nameFilter=text?'[name~"'+escapeOverpassRegex(text)+'",i]':'';
+ const nameFilter=text?'[name~"'+escapeOverpassValue(escapeOverpassRegex(text))+'",i]':'';
  const queryClauses=selected.osm.map(rule=>{
   const selector=buildOverpassTagSelector(rule.tags);
   return ['node','way','relation'].map(type=>type+selector+nameFilter+'('+bbox+');').join('');
