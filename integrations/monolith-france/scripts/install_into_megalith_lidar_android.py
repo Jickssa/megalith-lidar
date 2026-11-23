@@ -199,7 +199,7 @@ def main() -> int:
         source_lines = prepare_text.splitlines(keepends=True)
         function_indexes = [
             index for index, line in enumerate(source_lines)
-            if line.startswith("def prepare_android_assets():")
+            if line.lstrip().startswith("def prepare_android_assets(")
         ]
         if len(function_indexes) != 1:
             raise RuntimeError("Expected exactly one prepare_android_assets() definition.")
