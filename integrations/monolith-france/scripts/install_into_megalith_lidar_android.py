@@ -26,6 +26,16 @@ START_URL_PATTERN = re.compile(
 )
 
 
+FILE_CHOOSER_CATCH_OLD = """                } catch (_: ActivityNotFoundException) {
+                    fileUploadCallback = null
+                    false
+                }"""
+FILE_CHOOSER_CATCH_NEW = """                } catch (_: ActivityNotFoundException) {
+                    fileUploadCallback?.onReceiveValue(null)
+                    fileUploadCallback = null
+                    false
+                }"""
+
 def backup_once(path: Path, repo: Path) -> None:
     # Keep backups out of Android source/resource trees: AGP scans res/values.
     relative = path.resolve().relative_to(repo.resolve())
@@ -97,10 +107,15 @@ def main() -> int:
         "setGeolocationEnabled(true)",
         "WebViewAssetLoader.Builder()",
         'addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(this))',
+        "onShowFileChooser(",
+        "fileUploadCallback",
     )
     for token in expected_activity_tokens:
         if token not in activity_text:
             raise RuntimeError(f"Expected Android WebView capability absent: {token}")
+    if FILE_CHOOSER_CATCH_OLD not in activity_text and FILE_CHOOSER_CATCH_NEW not in activity_text:
+        raise RuntimeError("Android file chooser cancellation callback anchor not recognized.")
+
     for permission in (
         "android.permission.INTERNET",
         "android.permission.ACCESS_COARSE_LOCATION",
@@ -186,6 +201,13 @@ def main() -> int:
             gradle_anchor,
             gradle_anchor + "    " + gradle_marker + "\n",
             gradle_marker,
+        )
+
+    # Release the WebView callback when Android has no file-picker activity.
+    if FILE_CHOOSER_CATCH_OLD in activity.read_text(encoding="utf-8"):
+        replace_text_once(
+            activity, repo, FILE_CHOOSER_CATCH_OLD, FILE_CHOOSER_CATCH_NEW,
+            FILE_CHOOSER_CATCH_NEW,
         )
 
     # Change only the known upstream START_URL declaration.

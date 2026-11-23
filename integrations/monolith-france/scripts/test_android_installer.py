@@ -49,6 +49,20 @@ def main() -> int:
         write(activity, '''package uk.megalith.lidar
 class MainActivity {
     fun saveOrShareFile(filename: String, mimeType: String, content: String) {}
+    private var fileUploadCallback: ValueCallback<Array<Uri>>? = null
+    fun onShowFileChooserFixture() {
+        object {
+            fun choose() {
+                try {
+                    startActivityForResult(Intent.createChooser(Intent(), "Choose"), 1002)
+                    true
+                } catch (_: ActivityNotFoundException) {
+                    fileUploadCallback = null
+                    false
+                }
+            }
+        }
+    }
     fun setup() {
         val assetLoader = WebViewAssetLoader.Builder()
             .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(this))
@@ -132,7 +146,9 @@ if __name__ == "__main__":
         assert not list((self_host / "android/app/src/main/res").rglob("*.bak"))
         self_hook = (self_host / "scripts/prepare_android_assets.py").read_text(encoding="utf-8")
         assert self_hook.count("MONOLITH_FRANCE_INTEGRATION_V2") == 1
-        assert "/assets/web/france/web/index.html" in activity.read_text(encoding="utf-8")
+        patched_activity = activity.read_text(encoding="utf-8")
+        assert "/assets/web/france/web/index.html" in patched_activity
+        assert "fileUploadCallback?.onReceiveValue(null)\\n                    fileUploadCallback = null" in patched_activity
         assert "Megalith LiDAR France" in strings.read_text(encoding="utf-8")
         backup_root = repo / ".monolith-france-backups"
         assert (backup_root / "android/app/src/main/java/uk/megalith/lidar/MainActivity.kt").is_file()
@@ -142,6 +158,8 @@ if __name__ == "__main__":
         prep_text = prepare.read_text(encoding="utf-8")
         assert prep_text.count("MONOLITH_FRANCE_INTEGRATION_V2") == 1
         assert "france_out" in prep_text and "leaflet_images" in prep_text
+        repo_ignore = ROOT.parents[1] / ".gitignore"
+        assert ".monolith-france-backups/" in repo_ignore.read_text(encoding="utf-8")
 
         # Execute the same source preparation logic after the installer has patched it.
         invoke(repo, "--force")
