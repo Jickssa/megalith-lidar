@@ -1,6 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict');
-const {getStorageLimits,isValidObservationFeature,parseObservationImport,isGeoJsonFile}=require('../web/app.js');
+const {getStorageLimits,isValidObservationFeature,parseObservationImport,isGeoJsonFile,getSearchSettings,buildPlaceSearchUrl}=require('../web/app.js');
 const point=(lon,lat,properties={title:'test'})=>({type:'Feature',geometry:{type:'Point',coordinates:[lon,lat]},properties});
 
 assert.equal(isValidObservationFeature(point(2.35,48.86)),true,'coordonnées WGS84 valides');
@@ -29,3 +29,17 @@ assert.equal(isGeoJsonFile({name:'payload.bin',type:'application/octet-stream'})
 assert.equal(isGeoJsonFile({name:'page.html',type:'text/html'}),false,'HTML rejected');
 assert.equal(isGeoJsonFile({name:'archive.zip',type:'application/zip'}),false,'archive rejected');
 console.log('PASS — GeoJSON validation, WGS84 ranges, MIME/extension filter, size limits and configuration fallbacks.');
+
+const searchSettings=getSearchSettings({search:{maxResults:250,osmMinimumZoom:9,territory:'METROPOLE'}});
+assert.deepEqual(searchSettings,{maxResults:30,osmMinimumZoom:9,territory:'METROPOLE'},'plafond de résultats et territoire métropolitain');
+const fallbackSearch=getSearchSettings({search:{maxResults:-2,osmMinimumZoom:30,territory:'UNKNOWN'}});
+assert.deepEqual(fallbackSearch,{maxResults:30,osmMinimumZoom:19,territory:'METROPOLE'},'valeurs de recherche invalides ramenées aux valeurs sûres');
+const placeUrl=buildPlaceSearchUrl('  dolmen  ',{search:{maxResults:12,osmMinimumZoom:8,territory:'METROPOLE'}});
+assert.equal(placeUrl.origin,'https://data.geopf.fr','endpoint officiel Géoplateforme');
+assert.equal(placeUrl.pathname,'/geocodage/search','route de géocodage direct');
+assert.equal(placeUrl.searchParams.get('q'),'dolmen','requête nettoyée');
+assert.equal(placeUrl.searchParams.get('limit'),'12','limite de résultats issue de la configuration');
+assert.equal(placeUrl.searchParams.get('terr'),'METROPOLE','recherche bornée à la France métropolitaine');
+const unsafeTerritory=buildPlaceSearchUrl('dolmen',{search:{territory:'*'}});
+assert.equal(unsafeTerritory.searchParams.get('terr'),'METROPOLE','territoire non autorisé refusé');
+console.log('PASS — territoire de géocodage, réglages OSM et limites de recherche.');
