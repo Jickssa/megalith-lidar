@@ -43,8 +43,15 @@ def main() -> int:
         ERRORS.append("Territoire ou locale incorrects.")
     if config.get("coordinateReferenceSystem") != "EPSG:4326":
         ERRORS.append("Le CRS attendu pour l'interface doit être EPSG:4326.")
-    if config.get("search", {}).get("defaultMode") != "place":
+    search_config = config.get("search", {})
+    if search_config.get("defaultMode") != "place":
         ERRORS.append("Le mode de recherche par défaut doit être le géocodage IGN pris en charge.")
+    if search_config.get("territory") != "METROPOLE":
+        ERRORS.append("Le géocodage doit être borné à la France métropolitaine.")
+    if search_config.get("maxResults") != 30:
+        ERRORS.append("Le géocodage doit être limité à 30 résultats.")
+    if search_config.get("osmMinimumZoom") != 8:
+        ERRORS.append("Le seuil de zoom OSM attendu est 8.")
     if config.get("detector", {}).get("enabled") is not False:
         ERRORS.append("La détection IA française doit rester désactivée.")
     storage = config.get("storage", {})
@@ -52,7 +59,7 @@ def main() -> int:
         ERRORS.append("Limite d'import GeoJSON inattendue.")
     if storage.get("maxFeatures") != 5000:
         ERRORS.append("Limite cumulée d'observations attendue : 5 000.")
-    for contract in ("getStorageLimits", "isValidObservationFeature", "parseObservationImport", "persistObs", "isGeoJsonFile"):
+    for contract in ("getStorageLimits", "isValidObservationFeature", "parseObservationImport", "persistObs", "isGeoJsonFile", "getSearchSettings", "buildPlaceSearchUrl"):
         if contract not in js:
             ERRORS.append(f"Contrat de stockage/GeoJSON absent : {contract}")
     if not isinstance(taxonomy, dict) or not taxonomy:
