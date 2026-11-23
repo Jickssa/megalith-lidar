@@ -1,37 +1,37 @@
-# Validation 1.2.3 — navigation et cache diagnostic
+# Validation 1.2.4 — navigation, sécurité et recherche territoriale
 
-## Architecture rectifiée
+## Navigation embarquée
 
-- Le sélecteur commun expose des accès directs aux deux véritables cartes : `/assets/web/france/web/index.html` (Atlas France) et `/assets/web/index.html` (Atlas britannique).
-- `france-home.html` et `uk-home.html` sont explicitement des pages de présentation, pas les Atlas cartographiques.
-- L'Atlas UK conserve le lien retour au sélecteur et expose aussi un accès « UK Atlas ».
-- L'Atlas France renvoie directement à l'Atlas britannique via sa barre d'en-tête.
+- Le sélecteur Android ouvre directement les deux interfaces cartographiques : `/assets/web/france/web/index.html` et `/assets/web/index.html`.
+- Les pages `france-home.html` et `uk-home.html` sont des présentations secondaires, pas les cartes.
+- Depuis l'Atlas UK, « Choose atlas » retourne au sélecteur et « France Atlas » mène à la carte France.
+- L'Atlas UK historique reste en anglais ; sa page d'introduction est en français.
 
-## Constat de rétro-ingénierie
+## Recherche territoriale France
 
-Le dépôt amont contient un seul document HTML racine, `index.html`, qui est l'interface cartographique UK complète. La navigation précédente envoyait le sélecteur vers `uk-home.html`, puis présentait ce dernier comme l'Atlas. La correction 1.2.2 rétablit le lien principal direct vers la carte UK. Le module français `france/web/index.html` est lui aussi accessible directement depuis le sélecteur.
+- La recherche IGN utilise le paramètre `terr=METROPOLE` pour ne pas mélanger les résultats des DOM-TOM avec la carte de France métropolitaine.
+- La limite de résultats vient de la configuration et est plafonnée à 30.
+- Le seuil de zoom de recherche OSM est lu depuis la configuration (8 par défaut).
+- Les tests vérifient l'URL produite, le filtre territorial, le plafonnement, les valeurs incorrectes et le seuil de zoom.
 
-## Tests CI
+## Sécurité Android
 
-- Sélecteur → Atlas France.
-- Sélecteur → Atlas britannique.
-- Introduction France → Atlas France.
-- Introduction UK → Atlas UK.
-- Atlas UK → sélecteur.
-- Atlas France → Atlas UK.
+- Images diagnostics limitées à 8 Mio, MIME et signature PNG validés, redirections interdites.
+- Cache borné à 64 Mio et 24 fichiers, rétention maximale de 30 jours.
+- Export natif plafonné et écrit hors du thread UI.
+- Import GeoJSON validé en extension/MIME, structure FeatureCollection et coordonnées WGS84.
 
-Tests physiques : non exécutés faute d'appareil.
+## CI 1.2.4
 
----
+Workflow push #146 : succès complet — https://github.com/Jickssa/megalith-lidar/actions/runs/45154564962
 
+- Validateur paquet : succès.
+- Syntaxe JavaScript et Python : succès.
+- Tests Node et fixture d'installateur : succès.
+- Android Gradle `assembleDebug` : succès.
+- Intégrité ZIP, `zipalign`, `apksigner verify` : succès.
+- APK : 19 024 313 octets, 97 entrées, SHA-256 `34804ea112838dfced2260801b262f6e186e75af1d588427b3e113ea7654677a`.
 
-## Contrôles ajoutés en 1.2.3
+## Limites
 
-- Sélecteur principal : la destination UK est explicitement libellée « Atlas UK » et conserve la cible réelle `/assets/web/index.html`.
-- Atlas UK : le lien « Choose atlas » revient au sélecteur ; le lien ajouté ouvre réellement l’Atlas France. Aucun lien « UK Atlas » ne recharge la page courante.
-- La page d’introduction UK est en français (`lang="fr"`). L’interface cartographique UK historique reste en anglais : elle n’a pas été traduite dans ce lot.
-- Téléchargement de diagnostics : réponse limitée à 8 Mio, MIME `image/png`, signature PNG contrôlée, redirections désactivées.
-- Cache diagnostics : plafond de 64 Mio et 24 PNG, expiration après 30 jours, suppression des fichiers temporaires orphelins.
-- Les contrats sont contrôlés par le validateur et la fixture d’installation ; la compilation Gradle CI contrôle la syntaxe Kotlin.
-
-La recette physique sur appareil Android et la comparaison de certificat entre APK de production et APK Debug restent à effectuer.
+La recette physique sur téléphone Android reste non exécutée. La compatibilité de signature avec la version déjà installée n'a pas été établie ; sauvegarder les relevés GeoJSON avant toute tentative de remplacement.
