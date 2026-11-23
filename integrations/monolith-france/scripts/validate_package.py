@@ -47,8 +47,14 @@ def main() -> int:
         ERRORS.append("Le mode de recherche par défaut doit être le géocodage IGN pris en charge.")
     if config.get("detector", {}).get("enabled") is not False:
         ERRORS.append("La détection IA française doit rester désactivée.")
-    if config.get("storage", {}).get("maxImportBytes") != 20_971_520:
+    storage = config.get("storage", {})
+    if storage.get("maxImportBytes") != 20_971_520:
         ERRORS.append("Limite d'import GeoJSON inattendue.")
+    if storage.get("maxFeatures") != 5000:
+        ERRORS.append("Limite cumulée d'observations attendue : 5 000.")
+    for contract in ("getStorageLimits", "isValidObservationFeature", "parseObservationImport", "persistObs"):
+        if contract not in js:
+            ERRORS.append(f"Contrat de stockage/GeoJSON absent : {contract}")
     if not isinstance(taxonomy, dict) or not taxonomy:
         ERRORS.append("Taxonomie archéologique vide ou invalide.")
 
