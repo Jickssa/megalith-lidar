@@ -18,16 +18,28 @@ function normalizeTaxonomy(taxonomy){
  return categories.filter(category=>{
   if(!category||typeof category.id!=='string'||!category.id.trim()||seen.has(category.id))return false;
   seen.add(category.id);
-  return Array.isArray(category.osm)&&(category.osm.length>0);
+  return Array.isArray(category.osm)&&category.osm.length>0;
  }).map(category=>({
   id:category.id,
   label:String(category.label||category.id),
   terms:Array.isArray(category.terms)?category.terms.map(String):[],
-  osm:category.osm.filter(rule=>rule&&typeof rule.key==='string'&&typeof rule.value==='string')
+  osm:category.osm.map(rule=>{
+   if(rule&&rule.tags&&typeof rule.tags==='object'&&!Array.isArray(rule.tags)){
+    const tags=Object.entries(rule.tags).filter(([key,value])=>typeof key==='string'&&typeof value==='string'&&key&&value);
+    return tags.length?{tags:Object.fromEntries(tags)}:null;
+   }
+   return rule&&typeof rule.key==='string'&&typeof rule.value==='string'?{tags:{[rule.key]:rule.value}}:null;
+  }).filter(Boolean)
  }));
 }
 function escapeOverpassValue(value){
  return String(value).replace(/\\/g,'\\\\').replace(/"/g,'\\"');
+}
+function escapeOverpassRegex(value){
+ return String(value).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+}
+function buildOverpassTagSelector(tags){
+ return Object.entries(tags).map(([key,value])=>'["'+escapeOverpassValue(key)+'"="'+escapeOverpassValue(value)+'"]').join('');
 }
 function getSearchSettings(config=S.cfg){
  const search=config?.search||{};
@@ -70,13 +82,12 @@ function buildOverpassQuery({bounds,category,taxonomy,query,limit=1200}){
  const selected=categories.find(item=>item.id===category);
  if(!selected)throw Error('Catégorie archéologique inconnue : '+category);
  const bbox=[box.south,box.west,box.north,box.east].join(',');
- const clauses=selected.osm.map(rule=>{
-  const key=escapeOverpassValue(rule.key),value=escapeOverpassValue(rule.value);
-  return ['node','way','relation'].map(type=>type+'["'+key+'"="'+value+'"]('+bbox+');').join('');
- }).join('');
  const text=String(query||'').trim();
- const nameFilter=text?'[name~"'+escapeOverpassValue(text)+'",i]':'';
- const queryClauses=clauses.replaceAll('('+bbox+');',''+nameFilter+'('+bbox+');');
+ const nameFilter=text?'[name~"'+escapeOverpassRegex(text)+'",i]':'';
+ const queryClauses=selected.osm.map(rule=>{
+  const selector=buildOverpassTagSelector(rule.tags);
+  return ['node','way','relation'].map(type=>type+selector+nameFilter+'('+bbox+');').join('');
+ }).join('');
  const safeLimit=Math.max(1,Math.min(Number.isSafeInteger(limit)?limit:1200,2000));
  return '[out:json][timeout:25];('+queryClauses+');out center tags '+safeLimit+';';
 }
@@ -204,6 +215,6 @@ async function importObs(f){
 }
 function events(){$('searchButton').addEventListener('click',search);$('searchInput').addEventListener('keydown',e=>{if(e.key==='Enter')search()});$('basemapSelect').addEventListener('change',e=>{Object.values(S.base).forEach(l=>S.map.removeLayer(l));S.base[e.target.value].addTo(S.map)});[['layerMnt','mnt'],['layerMns','mns'],['layerMnh','mnh']].forEach(([id,k])=>$(id).addEventListener('change',e=>e.target.checked?S.over[k].addTo(S.map):S.map.removeLayer(S.over[k])));$('locateButton').addEventListener('click',()=>{if(!navigator.geolocation)return toast('Géolocalisation indisponible');navigator.geolocation.getCurrentPosition(p=>S.map.setView([p.coords.latitude,p.coords.longitude],15),e=>toast('Position indisponible : '+e.message),{timeout:10000})});$('addObservation').addEventListener('click',addObs);$('exportObservations').addEventListener('click',exportObs);$('importGeoJson').addEventListener('change',e=>importObs(e.target.files?.[0]));$('cancelDialog').addEventListener('click',()=>$('observationDialog').close());$('observationForm').addEventListener('submit',e=>{e.preventDefault();saveObs()})}
 async function init(){try{[S.cfg,S.taxonomy]=await Promise.all([getJson(CFG),getJson('/assets/web/france/config/archaeology-taxonomy.fr.json')]);S.sources=await getJson(SRC);initMap();events();loadObs();$('mapStatus').textContent='Module prêt — requêtes à la demande'}catch(e){$('mapStatus').textContent='Initialisation impossible : '+e.message;toast('Erreur au démarrage du module France.')}}
-if(typeof module!=='undefined'&&module.exports)module.exports={getStorageLimits,isValidObservationFeature,parseObservationImport,isGeoJsonFile,getSearchSettings,buildPlaceSearchUrl,normalizeTaxonomy,escapeOverpassValue,queryBoxFromBounds,buildOverpassQuery,osmElementToItem,buildPoiAutocompleteUrl};
+if(typeof module!=='undefined'&&module.exports)module.exports={getStorageLimits,isValidObservationFeature,parseObservationImport,isGeoJsonFile,getSearchSettings,buildPlaceSearchUrl,normalizeTaxonomy,escapeOverpassValue,escapeOverpassRegex,buildOverpassTagSelector,queryBoxFromBounds,buildOverpassQuery,osmElementToItem,buildPoiAutocompleteUrl};
 if(typeof document!=='undefined')document.addEventListener('DOMContentLoaded',init);
 })();
