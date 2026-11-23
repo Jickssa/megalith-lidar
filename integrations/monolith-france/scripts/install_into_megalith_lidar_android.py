@@ -46,7 +46,183 @@ FILE_CHOOSER_CATCH_NEW = """                } catch (_: ActivityNotFoundExceptio
                 }"""
 
 def build_atlas_home() -> str:
-    return "<!doctype html>\n<html lang=\"fr\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width,initial-scale=1,viewport-fit=cover\">\n<meta name=\"theme-color\" content=\"#17252b\">\n<title>Monolith — Choisir un atlas</title>\n<style>\n:root{color-scheme:dark;--bg:#101a20;--panel:#1b2b32;--line:#36515c;--text:#edf4f4;--muted:#b5c6c9;--gold:#d5aa70;--blue:#7cc6e5}\n*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:system-ui,-apple-system,\"Segoe UI\",sans-serif;background:radial-gradient(ellipse at 50% -10%,#2d4851 0,#101a20 60%);color:var(--text)}\nbody{min-height:100dvh;display:flex;flex-direction:column}header{padding:26px 20px 14px;text-align:center}.brand{font-size:13px;letter-spacing:.24em;color:var(--gold);font-weight:800}h1{font-family:Georgia,serif;font-size:clamp(30px,7vw,48px);font-weight:500;margin:10px 0 5px}.subtitle{max-width:640px;margin:auto;color:var(--muted);line-height:1.5}\nmain{width:min(880px,calc(100% - 28px));margin:auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;padding:28px 0 34px}\n.atlas{display:flex;flex-direction:column;min-height:270px;text-decoration:none;color:inherit;background:linear-gradient(155deg,rgba(255,255,255,.045),transparent 60%),var(--panel);border:1px solid var(--line);border-radius:18px;overflow:hidden;transition:transform .18s,border-color .18s,box-shadow .18s}.atlas:hover,.atlas:focus-visible{transform:translateY(-3px);border-color:var(--gold);box-shadow:0 15px 40px #0005;outline:none}\n.art{height:128px;display:grid;place-items:center;position:relative;overflow:hidden;background:linear-gradient(135deg,#203c42,#15282e)}.art:before,.art:after{content:\"\";position:absolute;width:230px;height:110px;border:1px solid #d5aa7040;border-radius:50%;transform:rotate(-16deg)}.art:after{width:180px;height:80px;transform:rotate(21deg)}.art span{font-size:56px;color:var(--gold);position:relative;z-index:1;font-family:Georgia,serif}\n.france .art{background:linear-gradient(135deg,#183c53,#1d4c50 58%,#213b37)}.uk .art{background:linear-gradient(135deg,#303b50,#2a4850 58%,#394435)}\n.content{padding:19px 20px 20px;display:flex;flex-direction:column;flex:1}.kicker{font-size:10px;letter-spacing:.17em;font-weight:800;color:var(--gold);text-transform:uppercase}h2{font-family:Georgia,serif;font-size:25px;margin:7px 0 8px;font-weight:500}p{color:var(--muted);font-size:13px;line-height:1.55;margin:0 0 18px}.go{margin-top:auto;display:flex;align-items:center;justify-content:space-between;color:var(--blue);font-weight:700;font-size:13px}.go b{font-size:22px;font-weight:400}footer{text-align:center;padding:0 18px 20px;color:#82969c;font-size:11px}\n@media(max-width:620px){header{padding-top:24px}main{grid-template-columns:1fr;gap:13px;max-width:500px;padding-top:17px}.atlas{min-height:220px}.art{height:94px}.art span{font-size:44px}.content{padding:15px 17px 17px}h2{font-size:23px}}\n</style></head><body>\n<header><div class=\"brand\">MONOLITH · ATLAS</div><h1>Choisir un atlas</h1><p class=\"subtitle\">Deux territoires, deux espaces de prospection. Sélectionne la cartographie à ouvrir.</p></header>\n<main>\n<a class=\"atlas france\" href=\"/assets/web/france/web/index.html\" aria-label=\"Ouvrir directement l’Atlas France\"><div class=\"art\" aria-hidden=\"true\"><span>FR</span></div><div class=\"content\"><div class=\"kicker\">France métropolitaine</div><h2>Atlas France</h2><p>Cartographie IGN, relief LiDAR HD, fonds topographiques et carnet de prospection français.</p><div class=\"go\">Ouvrir l’Atlas France <b>→</b></div></div></a>\n<a class=\"atlas uk\" href=\"/assets/web/index.html\" aria-label=\"Ouvrir directement l’Atlas UK\"><div class=\"art\" aria-hidden=\"true\"><span>UK</span></div><div class=\"content\"><div class=\"kicker\">Royaume-Uni</div><h2>Atlas UK</h2><p>Atlas historique et archéologique britannique, jeux de données, analyses et outils de terrain existants.</p><div class=\"go\">Ouvrir l’Atlas UK <b>→</b></div></div></a>\n</main><footer>Monolith · Exploration patrimoniale et cartographie de terrain</footer></body></html>"
+    return """<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#17252b">
+<title>Monolith International — Country & Language</title>
+<style>
+:root{color-scheme:dark;--bg:#101a20;--panel:#1b2b32;--line:#36515c;--text:#edf4f4;--muted:#b5c6c9;--gold:#d5aa70;--blue:#7cc6e5}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:radial-gradient(ellipse at 50% -10%,#2d4851 0,#101a20 65%);color:var(--text)}
+body{min-height:100dvh;display:flex;flex-direction:column}
+header{text-align:center;padding:34px 18px 18px}.brand{font-size:12px;letter-spacing:.25em;font-weight:850;color:var(--gold)}h1{font:500 clamp(32px,7vw,52px) Georgia,serif;margin:12px 0 8px}.subtitle{color:var(--muted);max-width:680px;margin:auto;line-height:1.55}
+main{width:min(700px,calc(100% - 28px));margin:auto;padding:20px 0 32px;flex:1}
+.panel{background:linear-gradient(150deg,rgba(255,255,255,.045),transparent 65%),var(--panel);border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:0 15px 42px #0003}
+label{display:block;color:var(--muted);font-size:12px;font-weight:700;margin:13px 0 7px}
+select{width:100%;min-height:52px;padding:12px 14px;border:1px solid #47606a;border-radius:10px;background:#101e25;color:var(--text);font:inherit;font-size:16px}
+.note{color:var(--muted);font-size:12px;line-height:1.55;margin:14px 0}
+.profile{border:1px solid #3a5960;background:#12242b;border-radius:12px;padding:13px;margin-top:14px}
+.profile strong{display:block;color:var(--gold);margin-bottom:5px}.profile p{font-size:12px;color:var(--muted);line-height:1.5;margin:0}
+.remember{display:flex;align-items:center;gap:9px;color:var(--muted);font-size:12px;margin:17px 0}
+.remember input{width:18px;height:18px;accent-color:#d5aa70}
+button,.community{display:flex;width:100%;align-items:center;justify-content:center;min-height:50px;border:1px solid var(--gold);border-radius:10px;background:var(--gold);color:#172128;font:700 15px system-ui;text-decoration:none;cursor:pointer}
+.community{margin-top:11px;border-color:#44626c;background:#233942;color:var(--blue)}
+#status{min-height:20px;color:var(--muted);font-size:12px;margin-top:12px}
+footer{text-align:center;color:#82969c;padding:0 16px 22px;font-size:11px}
+button:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
+@media(max-width:540px){header{padding-top:25px}.panel{padding:16px}main{padding-top:12px}}
+</style>
+</head>
+<body>
+<header><div class="brand">MONOLITH · INTERNATIONAL</div><h1 id="pageTitle">Choose your territory</h1><p class="subtitle" id="pageSubtitle">Select a supported country and an available interface language. The application will open directly in that territory.</p></header>
+<main><section class="panel" aria-labelledby="pageTitle">
+<label for="countrySelect" id="countryLabel">Country / territory</label>
+<select id="countrySelect" disabled><option>Loading…</option></select>
+<label for="languageSelect" id="languageLabel">Interface language</label>
+<select id="languageSelect" disabled><option>Loading…</option></select>
+<p class="note" id="languageNote">Only languages actually available for each country are offered.</p>
+<div class="profile" id="profileInfo"><strong>Loading country profiles…</strong><p id="profileText"></p></div>
+<label class="remember"><input id="rememberPreference" type="checkbox" checked><span id="rememberLabel">Remember my choice on this device</span></label>
+<button type="button" id="openAtlas" disabled>Open application</button>
+<a class="community" href="/assets/web/community-countries.html" id="communityLink">Contribute a country ↗</a>
+<div id="status" role="status" aria-live="polite"></div>
+</section></main>
+<footer>Monolith · International archaeological landscape exploration</footer>
+<script>
+(()=>{
+'use strict';
+const BASE='/assets/web/france/config/';
+const PREF='monolith.preferences.v1';
+const $=id=>document.getElementById(id);
+let catalog=null,profiles=new Map(),languages=new Map(),selectedProfile=null,selectedLanguage=null;
+const fetchJson=async path=>{const r=await fetch(path,{cache:'no-store'});if(!r.ok)throw Error(path+' — HTTP '+r.status);return r.json()};
+const message=(key,fallback)=>languages.get(selectedLanguage)?.messages?.[key]||fallback;
+function applyLanguage(locale){
+ selectedLanguage=locale;
+ const m=languages.get(locale)?.messages||{};
+ document.documentElement.lang=locale;
+ $('countryLabel').textContent=m.selectCountry||'Country / territory';
+ $('languageLabel').textContent=m.selectLanguage||'Interface language';
+ $('languageNote').textContent=m.countryLanguageNote||'Only supported languages are listed.';
+ $('rememberLabel').textContent=m.remember||'Remember my choice';
+ $('openAtlas').textContent=m.open||'Open application';
+ $('communityLink').textContent=(m.community||'Contribute a country')+' ↗';
+ $('communityLink').href='/assets/web/community-countries.html?lang='+encodeURIComponent(locale);
+ $('pageTitle').textContent=m.appName==='Monolith'?'Monolith — '+(m.selectCountry||'Country'):'Monolith International';
+}
+function profileName(profile,locale){
+ return profile?.name?.[locale]||profile?.name?.[profile?.defaultLocale]||profile?.countryCode||'Unknown';
+}
+function fillCountries(){
+ $('countrySelect').innerHTML='';
+ for(const entry of catalog.countries.filter(c=>c.status==='active')){
+  const option=document.createElement('option');option.value=entry.code;option.textContent=entry.name?.['fr-FR']||entry.name?.['en-GB']||entry.code;$('countrySelect').append(option);
+ }
+}
+async function loadProfile(code,preferredLocale){
+ const entry=catalog.countries.find(c=>c.code===code&&c.status==='active');
+ if(!entry)throw Error('Unsupported country profile: '+code);
+ const profile=profiles.get(code)||await fetchJson(BASE+'countries/'+entry.profile);
+ if(profile.status!=='active'||profile.countryCode!==code)throw Error('Country profile failed validation: '+code);
+ if(!Array.isArray(profile.supportedLocales)||!profile.supportedLocales.length)throw Error('No supported UI language for '+code);
+ const locales=profile.supportedLocales;
+ for(const locale of locales)if(!languages.has(locale))languages.set(locale,await fetchJson(BASE+'languages/'+locale+'.json'));
+ profiles.set(code,profile);selectedProfile=profile;
+ $('languageSelect').innerHTML='';
+ for(const locale of locales){
+  const entryLanguage=languages.get(locale);
+  const option=document.createElement('option');option.value=locale;option.textContent=entryLanguage.nativeName||locale;$('languageSelect').append(option);
+ }
+ selectedLanguage=locales.includes(preferredLocale)?preferredLocale:profile.defaultLocale;
+ if(!locales.includes(selectedLanguage))selectedLanguage=locales[0];
+ $('languageSelect').value=selectedLanguage;applyLanguage(selectedLanguage);
+ $('profileInfo').querySelector('strong').textContent=profileName(profile,selectedLanguage)+' · '+(profile.capabilities?.archaeologicalSearch||'Country profile');
+ $('profileText').textContent=(profile.status==='active'?'Supported territory profile':'Community profile')+' · '+profile.coordinateReferenceSystem+' · '+profile.sources.length+' declared data sources';
+ $('openAtlas').disabled=false;
+}
+async function openSelected(){
+ if(!selectedProfile||!selectedLanguage)return;
+ const entry=catalog.countries.find(c=>c.code===selectedProfile.countryCode);
+ if(!entry||!entry.supportedLanguages.includes(selectedLanguage)||!selectedProfile.supportedLocales.includes(selectedLanguage)){
+  $('status').textContent=message('unsupported','This combination is unavailable.');return;
+ }
+ const target=selectedProfile.atlasEntry;
+ if(typeof target!=='string'||!target.startsWith('/assets/web/')||target.includes('..')){
+  $('status').textContent='Profile entry route is invalid.';return;
+ }
+ if($('rememberPreference').checked){
+  localStorage.setItem(PREF,JSON.stringify({countryCode:selectedProfile.countryCode,locale:selectedLanguage}));
+ }else localStorage.removeItem(PREF);
+ window.location.assign(target);
+}
+async function init(){
+ try{
+  catalog=await fetchJson(BASE+'countries/catalog.json');
+  const saved=(()=>{try{return JSON.parse(localStorage.getItem(PREF)||'null')}catch{return null}})();
+  fillCountries();$('countrySelect').disabled=false;
+  const codes=catalog.countries.filter(c=>c.status==='active').map(c=>c.code);
+  const code=codes.includes(saved?.countryCode)?saved.countryCode:(codes.includes(catalog.defaultCountry)?catalog.defaultCountry:codes[0]);
+  $('countrySelect').value=code;
+  $('rememberPreference').checked=!!saved;
+  await loadProfile(code,saved?.locale);
+  $('countrySelect').addEventListener('change',e=>loadProfile(e.target.value,null).catch(showError));
+  $('languageSelect').addEventListener('change',e=>{applyLanguage(e.target.value);$('profileInfo').querySelector('strong').textContent=profileName(selectedProfile,e.target.value)+' · '+(selectedProfile.capabilities?.archaeologicalSearch||'Country profile')});
+  $('openAtlas').addEventListener('click',openSelected);
+ }catch(e){showError(e)}
+}
+function showError(error){$('status').textContent='Unable to load country profile: '+error.message;$('openAtlas').disabled=true}
+document.addEventListener('DOMContentLoaded',init);
+})();
+</script>
+</body></html>"""
+
+
+def build_community_page() -> str:
+    return """<!doctype html>
+<html lang="fr"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#14232b"><title>Monolith Community — Country profiles</title>
+<style>
+:root{color-scheme:dark;--bg:#101a20;--panel:#1b2b32;--line:#36515c;--text:#edf4f4;--muted:#b5c6c9;--gold:#d5aa70;--blue:#7cc6e5}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:system-ui,sans-serif;background:radial-gradient(ellipse at 50% -10%,#2d4851 0,#101a20 65%);color:var(--text)}
+main{width:min(820px,calc(100% - 28px));margin:auto;padding:28px 0 40px}
+h1{font:500 clamp(32px,7vw,50px) Georgia,serif}.lead{color:var(--muted);line-height:1.6}.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:19px;margin:15px 0}.panel h2{font-size:18px;color:var(--gold)}li{margin:9px 0;color:var(--muted);line-height:1.5}a{color:var(--blue)}.back{display:inline-block;text-decoration:none;border:1px solid var(--line);border-radius:9px;padding:11px 14px;margin-bottom:15px}
+</style></head><body><main>
+<a class="back" href="/assets/web/atlas-home.html">← Retour au sélecteur</a>
+<div id="fr">
+<div class="brand">MONOLITH · COMMUNITY</div><h1>Contribuer à un nouveau pays</h1>
+<p class="lead">Monolith est conçu pour accueillir de nouveaux profils territoriaux sans dupliquer le moteur de l'application. À ce jour, seuls les profils France métropolitaine et Royaume-Uni sont déclarés actifs.</p>
+<section class="panel"><h2>Préparer un profil</h2><ol>
+<li>Définir le code ISO, le CRS, l'emprise et les paramètres cartographiques.</li>
+<li>Documenter les fonds, services WMTS/WMS, données LiDAR et couvertures.</li>
+<li>Déclarer les sources archéologiques, les licences et les attributions.</li>
+<li>Construire une taxonomie locale fondée sur des conventions documentées.</li>
+<li>Fournir les traductions réellement disponibles et des tests reproductibles.</li>
+<li>Valider le profil avec le schéma JSON puis ouvrir une Pull Request.</li>
+</ol></section>
+<section class="panel"><h2>Règles de qualité</h2><ul>
+<li>Ne pas transposer les modèles ou métriques britanniques.</li><li>Ne pas présenter un tag OSM comme une confirmation archéologique.</li><li>Documenter la couverture réelle et la licence de chaque source.</li><li>Ne pas publier les coordonnées précises de sites sensibles.</li><li>Ne pas déclarer actif un profil incomplet ou non testé.</li>
+</ul></section>
+<p class="lead">Le paquet territorial installable depuis l'application n'est pas encore disponible. Les contributions passent actuellement par GitHub.</p>
+<a href="https://github.com/Jickssa/megalith-lidar/blob/feature/monolith-international-next/integrations/monolith-france/community/CONTRIBUTING-COUNTRIES.md">Guide complet de contribution GitHub ↗</a>
+</div>
+<div id="en" hidden>
+<div class="brand">MONOLITH · COMMUNITY</div><h1>Contribute a country</h1>
+<p class="lead">Monolith is designed for additional territory profiles without duplicating the application engine. Currently only Metropolitan France and the United Kingdom are marked active.</p>
+<section class="panel"><h2>Prepare a profile</h2><ol>
+<li>Define the ISO code, CRS, geographic extent and map settings.</li><li>Document basemaps, WMTS/WMS services, LiDAR datasets and coverage.</li><li>Declare archaeological sources, licences and attribution.</li><li>Build a local taxonomy based on documented conventions.</li><li>Provide translations that actually exist and reproducible tests.</li><li>Validate the profile against JSON Schema and open a Pull Request.</li>
+</ol></section>
+<section class="panel"><h2>Quality requirements</h2><ul>
+<li>Do not transfer British model scores or metrics.</li><li>Do not treat an OSM tag as archaeological confirmation.</li><li>Document coverage and licensing for each source.</li><li>Do not publish precise coordinates for sensitive sites.</li><li>Do not mark incomplete or untested profiles active.</li>
+</ul></section>
+<p class="lead">In-app installation of arbitrary country packages is not implemented yet. Contributions currently go through GitHub.</p>
+<a href="https://github.com/Jickssa/megalith-lidar/blob/feature/monolith-international-next/integrations/monolith-france/community/CONTRIBUTING-COUNTRIES.md">Full GitHub contribution guide ↗</a>
+</div>
+<script>
+(()=>{const p=new URLSearchParams(location.search);const en=p.get('lang')==='en-GB';document.documentElement.lang=en?'en-GB':'fr';document.getElementById('fr').hidden=en;document.getElementById('en').hidden=!en;})();
+</script></main></body></html>"""
 
 
 def build_territory_homes() -> dict[str, str]:
@@ -306,8 +482,15 @@ def main() -> int:
                            "marker-icon-2x.png", "marker-shadow.png"):
             shutil.copy2(france_src / "web" / "vendor" / "images" / image_name,
                          leaflet_images / image_name)
-        # MONOLITH_ATLAS_HOME_V1: shared territory chooser.
+        # MONOLITH_ATLAS_HOME_V2: independent country and language selection.
         (web_out / "atlas-home.html").write_text(build_atlas_home(), encoding="utf-8")
+        (web_out / "community-countries.html").write_text(build_community_page(), encoding="utf-8")
+        for folder in ("countries", "languages"):
+            source_folder = france_src / "config" / folder
+            target_folder = web_out / "france" / "config" / folder
+            if target_folder.exists():
+                shutil.rmtree(target_folder)
+            shutil.copytree(source_folder, target_folder)
         # MONOLITH_TERRITORY_HOMES_V1: separate French and British entry pages.
         territory_homes = {build_territory_homes()!r}
         for page_name, page_html in territory_homes.items():
@@ -325,6 +508,8 @@ def main() -> int:
     home_source = (
         "def build_atlas_home():" + chr(10)
         + "    return " + repr(build_atlas_home()) + chr(10) + chr(10)
+        + "def build_community_page():" + chr(10)
+        + "    return " + repr(build_community_page()) + chr(10) + chr(10)
     )
     if hook_marker in prepare_text:
         # Upgrade the previously injected page generator as well as its hook.
