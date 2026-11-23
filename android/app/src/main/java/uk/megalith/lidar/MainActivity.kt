@@ -29,6 +29,7 @@ import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
 
@@ -39,6 +40,7 @@ class MainActivity : Activity() {
     private var pendingGeoOrigin: String? = null
     private var pendingGeoCallback: GeolocationPermissions.Callback? = null
     private var fileUploadCallback: ValueCallback<Array<Uri>>? = null
+    private val diagnosticCacheLock = Any()
 
     inner class AndroidBridge {
         @JavascriptInterface
@@ -318,47 +320,149 @@ class MainActivity : Activity() {
 
     private fun serveDiagnosticPng(rawName: String): WebResourceResponse {
         val safeName = rawName.replace(Regex("[^A-Za-z0-9._-]"), "")
-        if (safeName.isEmpty() || !safeName.endsWith(".png")) {
+        if (safeName.isEmpty() || safeName != rawName || !safeName.endsWith(".png", ignoreCase = true)) {
             return emptyResponse(404, "Not Found")
         }
-        val diagDir = File(cacheDir, "diagnostics").apply { mkdirs() }
-        val cachedFile = File(diagDir, safeName)
-        if (!cachedFile.exists() || cachedFile.length() == 0L) {
-            val remoteUrl = "$REMOTE_DIAG_BASE$safeName"
-            try {
-                val conn = (URL(remoteUrl).openConnection() as HttpURLConnection).apply {
-                    connectTimeout = 8000
-                    readTimeout = 12000
-                    requestMethod = "GET"
-                }
-                if (conn.responseCode == 200) {
-                    val tmpFile = File(diagDir, "$safeName.tmp")
-                    conn.inputStream.use { input ->
-                        FileOutputStream(tmpFile).use { output ->
-                            input.copyTo(output)
-                        }
-                    }
-                    tmpFile.renameTo(cachedFile)
-                }
-                conn.disconnect()
-            } catch (_: Exception) {
-                // Offline or network unreachable; fall through to 404 if not cached
+
+        return synchronized(diagnosticCacheLock) {
+            val diagDir = File(cacheDir, "diagnostics").apply { mkdirs() }
+            val cachedFile = File(diagDir, safeName)
+            if (!isValidDiagnosticPng(cachedFile)) {
+                cachedFile.delete()
+                downloadDiagnosticPng(diagDir, cachedFile, safeName)
+            } else {
+                cachedFile.setLastModified(System.currentTimeMillis())
             }
-        }
-        if (cachedFile.exists() && cachedFile.length() > 0L) {
-            return WebResourceResponse(
+
+            if (!isValidDiagnosticPng(cachedFile)) {
+                return@synchronized emptyResponse(404, "Not Found")
+            }
+
+            trimDiagnosticCache(diagDir, cachedFile)
+            WebResourceResponse(
                 "image/png",
                 null,
                 200,
                 "OK",
                 mapOf(
                     "Access-Control-Allow-Origin" to "*",
-                    "Cache-Control" to "public, max-age=31536000"
+                    "Cache-Control" to "public, max-age=86400"
                 ),
                 FileInputStream(cachedFile)
             )
         }
-        return emptyResponse(404, "Not Found")
+    }
+
+    private fun isValidDiagnosticPng(file: File): Boolean {
+        if (!file.isFile || file.length() < PNG_SIGNATURE.size ||
+            file.length() > MAX_DIAGNOSTIC_FILE_BYTES
+        ) {
+            return false
+        }
+        return try {
+            FileInputStream(file).use { input ->
+                val signature = ByteArray(PNG_SIGNATURE.size)
+                var offset = 0
+                while (offset < signature.size) {
+                    val count = input.read(signature, offset, signature.size - offset)
+                    if (count < 0) return false
+                    offset += count
+                }
+                signature.contentEquals(PNG_SIGNATURE)
+            }
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    private fun downloadDiagnosticPng(directory: File, target: File, fileName: String): Boolean {
+        val connection = try {
+            (URL("$REMOTE_DIAG_BASE$fileName").openConnection() as HttpURLConnection).apply {
+                connectTimeout = 8000
+                readTimeout = 12000
+                requestMethod = "GET"
+                instanceFollowRedirects = false
+                setRequestProperty("Accept", "image/png")
+            }
+        } catch (_: Exception) {
+            return false
+        }
+
+        var temporaryFile: File? = null
+        try {
+            if (connection.responseCode != 200) return false
+            val contentType = connection.contentType
+                ?.substringBefore(";")
+                ?.trim()
+                ?.lowercase()
+            if (contentType != "image/png") return false
+
+            val declaredLength = connection.getHeaderField("Content-Length")?.toLongOrNull() ?: -1L
+            if (declaredLength > MAX_DIAGNOSTIC_FILE_BYTES ||
+                (declaredLength >= 0L && declaredLength < PNG_SIGNATURE.size)
+            ) {
+                return false
+            }
+
+            val temp = File.createTempFile("monolith-diag-", ".tmp", directory)
+            temporaryFile = temp
+            var totalBytes = 0L
+            connection.inputStream.use { input ->
+                FileOutputStream(temp).use { output ->
+                    val buffer = ByteArray(8192)
+                    while (true) {
+                        val count = input.read(buffer)
+                        if (count < 0) break
+                        totalBytes += count.toLong()
+                        if (totalBytes > MAX_DIAGNOSTIC_FILE_BYTES) {
+                            throw IOException("Diagnostic image exceeds the 8 MiB limit")
+                        }
+                        output.write(buffer, 0, count)
+                    }
+                }
+            }
+
+            if (!isValidDiagnosticPng(temp)) return false
+            if (target.exists() && !target.delete()) return false
+            val renamed = temp.renameTo(target)
+            if (renamed) temporaryFile = null
+            return renamed
+        } catch (_: Exception) {
+            // Offline, malformed response or oversized file: do not cache it.
+            return false
+        } finally {
+            temporaryFile?.delete()
+            connection.disconnect()
+        }
+    }
+
+    private fun trimDiagnosticCache(directory: File, keep: File) {
+        val now = System.currentTimeMillis()
+        val files = directory.listFiles()
+            ?.filter { it.isFile && it.extension.equals("png", ignoreCase = true) }
+            ?: emptyList()
+        val keepPath = try { keep.canonicalPath } catch (_: Exception) { keep.absolutePath }
+        var totalBytes = files.sumOf { it.length() }
+        var fileCount = files.size
+
+        for (file in files.sortedBy { it.lastModified() }) {
+            val path = try { file.canonicalPath } catch (_: Exception) { file.absolutePath }
+            val isCurrent = path == keepPath
+            val expired = !isCurrent && now - file.lastModified() > MAX_DIAGNOSTIC_CACHE_AGE_MS
+            val overLimit = fileCount > MAX_DIAGNOSTIC_CACHE_FILES ||
+                totalBytes > MAX_DIAGNOSTIC_CACHE_BYTES
+            if (expired || (overLimit && !isCurrent)) {
+                val size = file.length()
+                if (file.delete()) {
+                    fileCount--
+                    totalBytes -= size
+                }
+            }
+        }
+
+        directory.listFiles()
+            ?.filter { it.isFile && it.name.endsWith(".tmp", ignoreCase = true) }
+            ?.forEach { it.delete() }
     }
 
     private fun emptyResponse(code: Int, reason: String): WebResourceResponse {
@@ -453,5 +557,12 @@ class MainActivity : Activity() {
         private const val REQ_LOCATION_PERMISSION = 1001
         private const val REQ_FILE_CHOOSER = 1002
         private const val MAX_EXPORT_BYTES = 25 * 1024 * 1024
+        private const val MAX_DIAGNOSTIC_FILE_BYTES = 8L * 1024 * 1024
+        private const val MAX_DIAGNOSTIC_CACHE_BYTES = 64L * 1024 * 1024
+        private const val MAX_DIAGNOSTIC_CACHE_FILES = 24
+        private const val MAX_DIAGNOSTIC_CACHE_AGE_MS = 30L * 24 * 60 * 60 * 1000
+        private val PNG_SIGNATURE = byteArrayOf(
+            0x89.toByte(), 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A
+        )
     }
 }
