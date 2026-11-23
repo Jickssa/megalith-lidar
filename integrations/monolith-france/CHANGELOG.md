@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.2.2 — navigation rectifiée après recette utilisateur
+
+- Restauration des accès directs depuis le sélecteur commun vers les deux véritables interfaces cartographiques : Atlas France et Atlas britannique.
+- Les pages france-home.html et uk-home.html restent des introductions territoriales et ne sont plus présentées comme les Atlas eux-mêmes.
+- Dans l'en-tête UK embarqué, conservation du retour vers le sélecteur et ajout d'un lien direct explicite « UK Atlas ».
+- Dans l'interface cartographique française, le lien Royaume-Uni ouvre directement la carte UK, pas sa page d'introduction.
+- Tests de navigation mis à jour pour distinguer les pages d'accueil et les Atlas.
+
+
 ## 1.2.1 — 2026-11-23
 
 - Pont d'export Android borné à 25 Mio, écrit hors du thread UI et stocké sous nom temporaire unique.

@@ -168,10 +168,10 @@ if __name__ == "__main__":
         assets = repo / "android/app/src/main/assets/web"
         home = (assets / "atlas-home.html").read_text(encoding="utf-8")
         assert "Choisir un atlas" in home
-        assert "/assets/web/france-home.html" in home
-        assert "/assets/web/uk-home.html" in home
-        assert "/assets/web/france/web/index.html" not in home
-        assert "/assets/web/index.html" not in home
+        assert 'href="/assets/web/france/web/index.html"' in home
+        assert 'href="/assets/web/index.html"' in home
+        assert "/assets/web/france-home.html" not in home
+        assert "/assets/web/uk-home.html" not in home
 
         france_home = (assets / "france-home.html").read_text(encoding="utf-8")
         uk_home = (assets / "uk-home.html").read_text(encoding="utf-8")
@@ -186,11 +186,13 @@ if __name__ == "__main__":
         assert 'id="uk-atlas"' in uk_html and "UK atlas" in uk_html
         assert uk_html.count('data-monolith-atlas-home="true"') == 1
         assert 'href="/assets/web/atlas-home.html"' in uk_html
+        assert 'data-monolith-uk-atlas="true"' in uk_html
+        assert 'href="/assets/web/index.html"' in uk_html
 
         france_html = (assets / "france/web/index.html").read_text(encoding="utf-8")
         assert 'href="/assets/web/france-home.html"' in france_html
         assert "/assets/web/atlas-home.html" in france_html
-        assert "/assets/web/uk-home.html" in france_html
+        assert 'href="/assets/web/index.html"' in france_html
         assert (assets / "france/web/index.html").is_file()
         assert (assets / "france/config/france-config.json").is_file()
         expected_sizes = {
