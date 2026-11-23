@@ -15,8 +15,9 @@
   },
   "search": {
     "defaultMode": "place",
-    "maxResults": 250,
-    "osmMinimumZoom": 8
+    "maxResults": 30,
+    "osmMinimumZoom": 8,
+    "territory": "METROPOLE"
   },
   "detector": {
     "enabled": false,
