@@ -166,7 +166,7 @@ if __name__ == "__main__":
         prep_text = prepare.read_text(encoding="utf-8")
         assert prep_text.count("MONOLITH_FRANCE_INTEGRATION_V2") == 1
         assert "france_out" in prep_text and "leaflet_images" in prep_text
-        assert prep_text.count("MONOLITH_ATLAS_HOME_V1") == 1
+        assert prep_text.count("MONOLITH_ATLAS_HOME_V2") == 1
         assert "build_atlas_home" in prep_text
         repo_ignore = ROOT.parents[1] / ".gitignore"
         assert ".monolith-france-backups/" in repo_ignore.read_text(encoding="utf-8")
@@ -237,7 +237,7 @@ if __name__ == "__main__":
         real_text = real_prepare.read_text(encoding="utf-8")
         import ast
         ast.parse(real_text)
-        assert real_text.count("MONOLITH_ATLAS_HOME_V1") == 1
+        assert real_text.count("MONOLITH_ATLAS_HOME_V2") == 1
         assert real_text.count("export_osmand_files(docs_out, updated_utc=updated_utc, include_obf=False)") == 1
         assert "def build_atlas_home():" in real_text
         assert "atlas-home.html" in real_text
