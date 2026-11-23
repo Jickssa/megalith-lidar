@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "1.1",
+  "schemaVersion": "1.2",
   "categories": [
     {
       "id": "megaliths",
@@ -19,16 +19,15 @@
       ],
       "osm": [
         {
-          "key": "historic",
-          "value": "archaeological_site"
+          "tags": {
+            "historic": "archaeological_site",
+            "archaeological_site": "megalith"
+          }
         },
         {
-          "key": "archaeological_site",
-          "value": "megalith"
-        },
-        {
-          "key": "man_made",
-          "value": "cairn"
+          "tags": {
+            "man_made": "cairn"
+          }
         }
       ]
     },
@@ -47,20 +46,24 @@
       ],
       "osm": [
         {
-          "key": "archaeological_site",
-          "value": "tumulus"
+          "tags": {
+            "archaeological_site": "tumulus"
+          }
         },
         {
-          "key": "historic",
-          "value": "tumulus"
+          "tags": {
+            "historic": "tumulus"
+          }
         },
         {
-          "key": "historic",
-          "value": "barrow"
+          "tags": {
+            "historic": "barrow"
+          }
         },
         {
-          "key": "man_made",
-          "value": "cairn"
+          "tags": {
+            "man_made": "cairn"
+          }
         }
       ]
     },
@@ -80,20 +83,19 @@
       ],
       "osm": [
         {
-          "key": "historic",
-          "value": "archaeological_site"
+          "tags": {
+            "archaeological_site": "fortification"
+          }
         },
         {
-          "key": "historic",
-          "value": "fort"
+          "tags": {
+            "historic": "fort"
+          }
         },
         {
-          "key": "historic",
-          "value": "fortification"
-        },
-        {
-          "key": "archaeological_site",
-          "value": "fortification"
+          "tags": {
+            "historic": "fortification"
+          }
         }
       ]
     },
@@ -113,20 +115,15 @@
       ],
       "osm": [
         {
-          "key": "historic",
-          "value": "roman_villa"
+          "tags": {
+            "historic": "villa"
+          }
         },
         {
-          "key": "historic",
-          "value": "roman_settlement"
-        },
-        {
-          "key": "historic",
-          "value": "roman_camp"
-        },
-        {
-          "key": "historic",
-          "value": "archaeological_site"
+          "tags": {
+            "historic": "archaeological_site",
+            "archaeological_site": "settlement"
+          }
         }
       ]
     },
@@ -145,16 +142,14 @@
       ],
       "osm": [
         {
-          "key": "historic",
-          "value": "roman_road"
+          "tags": {
+            "historic": "roman_road"
+          }
         },
         {
-          "key": "historic",
-          "value": "milestone"
-        },
-        {
-          "key": "highway",
-          "value": "track"
+          "tags": {
+            "historic": "milestone"
+          }
         }
       ]
     },
@@ -171,19 +166,22 @@
       ],
       "osm": [
         {
-          "key": "historic",
-          "value": "castle"
+          "tags": {
+            "historic": "castle"
+          }
         },
         {
-          "key": "historic",
-          "value": "city_gate"
+          "tags": {
+            "historic": "city_gate"
+          }
         },
         {
-          "key": "historic",
-          "value": "fort"
+          "tags": {
+            "historic": "fort"
+          }
         }
       ]
     }
   ],
-  "interpretation": "Les catégories servent à organiser les relevés et les résultats documentaires. Les objets OSM sont des données contributives, pas une validation archéologique. Les recherches qui utilisent un tag générique peuvent retourner des résultats ambigus à vérifier."
+  "interpretation": "Les règles multi-tags réduisent les résultats ambigus. Certains tags génériques restent des indices contributifs et doivent être recoupés. Les catégories servent à organiser les relevés et les résultats documentaires ; elles ne constituent ni une datation ni une validation archéologique."
 }
