@@ -4,12 +4,18 @@ on:
   pull_request:
     paths:
       - "integrations/monolith-france/**"
+      - "android/**"
+      - "scripts/prepare_android_assets.py"
+      - "index.html"
       - ".github/workflows/validate-monolith-france.yml"
   push:
     branches:
       - "feature/monolith-france-1.1.0"
     paths:
       - "integrations/monolith-france/**"
+      - "android/**"
+      - "scripts/prepare_android_assets.py"
+      - "index.html"
   workflow_dispatch:
 
 permissions:
@@ -106,6 +112,11 @@ jobs:
               "assets/web/france/web/index.html",
               "assets/web/france/web/app.js",
               "assets/web/france/config/france-config.json",
+              "assets/web/france/config/archaeology-taxonomy.fr.json",
+              "assets/web/france/config/data-sources.json",
+              "assets/web/atlas-home.html",
+              "assets/web/uk-home.html",
+              "assets/web/france-home.html",
               "assets/web/leaflet/leaflet.js",
               "assets/web/leaflet/leaflet.css",
               "assets/web/index.html",
@@ -118,7 +129,13 @@ jobs:
               missing = [name for name in required if name not in names]
               if missing:
                   raise SystemExit("APK assets missing:\n" + "\n".join(missing))
-          print("APK archive integrity and required UK/France assets: OK")
+              with z.open("assets/web/france/web/app.js") as f:
+                  app_js = f.read().decode("utf-8")
+              with z.open("assets/web/france/web/index.html") as f:
+                  app_html = f.read().decode("utf-8")
+              if "buildOverpassQuery" not in app_js or "archaeologyCategory" not in app_html:
+                  raise SystemExit("APK French archaeological search assets are incomplete")
+          print("APK archive integrity, international routes and France search: OK")
           PY
           "$ANDROID_HOME/build-tools/35.0.0/zipalign" -c -v 4 "$APK"
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$APK"
