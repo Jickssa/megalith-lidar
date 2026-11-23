@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.3.1 — précision de la recherche OSM
+
+- Règles archéologiques OSM affinées avec des conjonctions documentées, notamment `historic=archaeological_site` + `archaeological_site=megalith`.
+- Recherche textuelle paramétrée par famille, incluant les champs de sous-type tels que `megalith_type` et `fortification_type`, en plus des noms/références.
+- Les doublons d'une même entité OSM sont supprimés lorsque plusieurs champs concordent.
+- Les tags ambigus ou non archéologiques (`highway=track`, `man_made=cairn` générique) ne sont plus injectés automatiquement dans les familles archéologiques.
+- Double échappement des valeurs regex et des chaînes Overpass.
+
+## 1.3.0 — recherche archéologique française et CI
 ## 1.3.0 — recherche archéologique française et CI
 
 - La taxonomie française pilote maintenant six familles de recherche OSM : mégalithes, tumulus, enceintes, sites romains, voies anciennes et patrimoine médiéval.
