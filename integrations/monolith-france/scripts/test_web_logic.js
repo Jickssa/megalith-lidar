@@ -58,7 +58,7 @@ assert.throws(()=>buildOverpassQuery({bounds:{getSouth:()=>91,getWest:()=>0,getN
 const osmQuery=buildOverpassQuery({bounds:bbox,category:'megaliths',taxonomy,query:'dolmen'});
 assert.ok(osmQuery.includes('node["historic"="archaeological_site"]["archaeological_site"="megalith"]'),'nœud archéologique contraint au sous-type mégalithe');
 assert.ok(osmQuery.includes('way["historic"="archaeological_site"]["archaeological_site"="megalith"]'),'conjonction de tags appliquée aux ways');
-assert.ok(osmQuery.includes('relation["man_made"="cairn"]'),'cairn recherché sur les relations');
+assert.ok(osmQuery.includes('relation["historic"="archaeological_site"]["archaeological_site"="megalith"]'),'relations archéologiques avec sous-type mégalithe');
 assert.match(osmQuery,/name~"dolmen"/,'texte utilisateur appliqué au nom');
 assert.match(osmQuery,/megalith_type~"dolmen"/,'recherche du sous-type indépendamment du nom');
 const safeRegexQuery=buildOverpassQuery({bounds:bbox,category:'megaliths',taxonomy,query:'barrow.*(east)'});
