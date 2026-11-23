@@ -100,3 +100,24 @@ Les tags OSM ont été vérifiés dans la documentation actuelle. Pour les méga
 La recherche texte interroge maintenant des champs configurés par catégorie (nom, nom français, référence, sous-type) et déduplique les mêmes objets. Les tags trop génériques ou documentés comme confondeurs ont été retirés des recherches automatiques.
 
 Limite : les catégories « patrimoine médiéval » comportent volontairement des objets bâtis visibles, pas uniquement des sites archéologiques enfouis. L'interface doit conserver cette distinction dans les fiches et filtres.
+
+
+## Audit de précision 1.3.1 — taxonomie et recherche OSM
+
+Vérification des conventions OSM actuelles :
+
+- Les mégalithes se décrivent par `historic=archaeological_site` + `archaeological_site=megalith`; les sous-types sont décrits par `megalith_type=*`.
+- Les villas romaines utilisent `historic=archaeological_site` + `archaeological_site=roman_villa`.
+- Les fortifications archéologiques utilisent `historic=archaeological_site` + `archaeological_site=fortification`, éventuellement avec `fortification_type=*`.
+- `archaeological_site=settlement` est documenté comme sous-type de site archéologique.
+- `man_made=cairn` peut concerner un cairn servant de repère ou d'importance topographique ; il n'est pas assimilé systématiquement à un site archéologique.
+- `highway=track` est un type de voie générique, impropre comme filtre automatique de voie antique.
+
+La taxonomie prend maintenant en charge les conjonctions de tags et les champs de recherche textuelle par catégorie. Les doublons d'objets OSM sont dédupliqués par identifiant stable. Les règles restent des filtres de rappel documentaire, non des détecteurs archéologiques.
+
+Références consultées :
+https://wiki.openstreetmap.org/wiki/Tag:archaeological_site%3Dmegalith
+https://wiki.openstreetmap.org/wiki/Tag:archaeological_site%3Droman_villa
+https://wiki.openstreetmap.org/wiki/Tag:archaeological_site%3Dfortification
+https://wiki.openstreetmap.org/wiki/Tag:historic%3Darchaeological_site
+https://wiki.openstreetmap.org/wiki/Tag:man_made%3Dcairn
