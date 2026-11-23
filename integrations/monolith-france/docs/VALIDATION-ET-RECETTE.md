@@ -15,7 +15,14 @@
 - Vérification du lien de retour injecté une seule fois dans l'Atlas britannique embarqué.
 - Vérification de l'absence de modification du fichier source britannique.
 - Vérification de la mise à niveau/réinstallation du hook existant.
-- Résultats CI et compilation APK : à compléter après exécution du workflow.
+- CI push #118 et PR #119 : succès complets.
+- Tests statiques, Node, Python, fixture d'installation et de réinstallation : tous réussis.
+- Compilation Debug : réussie sur le checkout Android réel.
+- Vérifications de l'APK : CRC, `zipalign` et `apksigner verify` réussis.
+- APK inspectée : 19 017 213 octets, 97 entrées, SHA-256 `1e0afc881fcf463dc180dce0c3b07b9eab0ab60da9d5bc21a974565672f9bec4`.
+- Les dix contrôles de routes et de langue sur les pages embarquées sont positifs.
+- Artefacts : push #118 ID `14789160054` ; PR #119 ID `14788607900`.
+- Recette physique Android et tests réels des services distants : non exécutés.
 
 ## Écart documentaire avec l'APK originale fournie
 

@@ -13,3 +13,10 @@ L'APK contient `assets/web/index.html`, `assets/web/leaflet/leaflet.js` et `leaf
 Le manifeste Android est un binaire AXML, pas un XML texte. La signature contient des marqueurs de schéma v2/v3 ; la validation cryptographique complète avec `apksigner` n'a pas été exécutée dans l'environnement d'analyse.
 
 Le binaire n'est pas modifié par l'intégrateur. Une reconstruction depuis les sources est nécessaire. Une APK reconstruite avec un certificat différent ne peut pas mettre à jour en place une APK existante portant une autre signature.
+
+## Inspection complémentaire — APK originale jointe (23 novembre 2026)
+
+- SHA-256 confirmé : `cf6362d6c5513c08740f2b0f58ac3178f29b11f0584117a2b3bd2911d6bdd3dd`.
+- L'archive contient une seule page HTML : `assets/web/index.html`. Aucune page d'accueil territoriale distincte, aucun deuxième fichier HTML et aucun libellé « Atlas britannique » dans le HTML n'ont été trouvés.
+- Les chaînes du DEX confirment le démarrage WebView sur `https://appassets.androidplatform.net/assets/web/index.html`.
+- La page embarquée est la véritable interface britannique : elle contient les contrôles de carte, les dialogues OsmAnd, les couches et les outils de prospection. La navigation à trois niveaux développée en version 1.2.0 est donc une nouvelle couche d'entrée, tout en préservant cette page comme Atlas final.

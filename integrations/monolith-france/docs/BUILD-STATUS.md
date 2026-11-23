@@ -1,13 +1,19 @@
 # État de validation — Monolith France
 
-## Navigation version 1.2.0 — en cours de validation
+## Navigation version 1.2.0 — validation automatisée réussie
 
-- L'APK originale jointe a été inspectée directement : SHA-256 `cf6362d6c5513c08740f2b0f58ac3178f29b11f0584117a2b3bd2911d6bdd3dd`; elle embarque une seule page HTML (`assets/web/index.html`) et le DEX référence `/assets/web/index.html` comme URL de démarrage. Ce binaire ne contient pas de page d'accueil territoriale ni de bouton « Atlas britannique » dans l'en-tête. Il ne permet donc pas de confirmer le parcours décrit pour une autre version/site.
-- Pour réaliser le parcours demandé sans déplacer ni dupliquer les interfaces existantes, la version 1.2.0 ajoute une étape d'accueil territoriale : sélecteur commun → accueil France/Royaume-Uni → Atlas correspondant.
-- Les pages territoriales sont générées après la reconstruction des assets ; les deux interfaces cartographiques restent à leurs chemins historiques.
-- La copie embarquée de l'Atlas britannique reçoit un lien de retour au sélecteur. Le fichier source racine `index.html` reste inchangé.
-- Le hook de génération existant est mis à niveau en place lors d'une réinstallation ; la sauvegarde du préparateur est désormais prise avant l'écriture.
-- Résultats CI 1.2.0 : à renseigner après le workflow déclenché par ce commit.
+- Commit de code validé : `c79227259302743a6d1e7e9fde3ee1086b8a053e`.
+- CI push #118 : succès complet — https://github.com/Jickssa/megalith-lidar/actions/runs/45108795445.
+- CI Pull Request #119 : succès complet — https://github.com/Jickssa/megalith-lidar/actions/runs/45108800344.
+- Contrôles statiques : validateur, syntaxe JavaScript, tests Node, syntaxe Python et fixture installateur/réinstallation tous réussis.
+- Build Android : installateur exécuté sur le véritable checkout, Gradle `assembleDebug` réussi, CRC APK valide, `zipalign` et `apksigner verify` réussis.
+- APK Debug : 19 017 213 octets ; SHA-256 `1e0afc881fcf463dc180dce0c3b07b9eab0ab60da9d5bc21a974565672f9bec4`.
+- APK inspectée directement : 97 entrées ; présence de `atlas-home.html`, `france-home.html`, `uk-home.html`, de l'Atlas britannique et de l'Atlas France.
+- Dix contrôles de navigation locaux sur le contenu de l'APK : tous positifs ; lien de retour intégré une seule fois dans la copie embarquée de l'Atlas britannique.
+- Artefact push ID `14789160054` : https://github.com/Jickssa/megalith-lidar/actions/runs/45108795445/artifacts/14789160054.
+- Artefact PR ID `14788607900` : https://github.com/Jickssa/megalith-lidar/actions/runs/45108800344/artifacts/14788607900.
+- L'APK originale jointe a été inspectée directement : SHA-256 `cf6362d6c5513c08740f2b0f58ac3178f29b11f0584117a2b3bd2911d6bdd3dd`; elle embarque une seule page HTML (`assets/web/index.html`) et le DEX référence `/assets/web/index.html` comme URL de démarrage. Ce binaire ne contient pas de page d'accueil territoriale ni de bouton « Atlas britannique » dans l'en-tête. Le parcours territorial à trois niveaux est donc une évolution nouvelle, pas une reproduction démontrée d'une seconde page absente de cette APK.
+- La recette physique sur smartphone et les tests réseau/cartographiques en conditions réelles restent à effectuer.
 
 
 ## État GitHub
@@ -16,7 +22,7 @@
 - Branche : `feature/monolith-france-1.1.0`.
 - PR #1 : ouverte, en brouillon, non fusionnée ; cible `main`.
 - Aucun changement poussé sur `main`.
-- Commit fonctionnel testé : `7a1cdd3776a4d1f4494f7c70520227b2388ab50e`.
+- Commit de référence 1.1.3 testé : `7a1cdd3776a4d1f4494f7c70520227b2388ab50e` (historique).
 - Les modifications documentaires postérieures doivent être distinguées du code déjà compilé dans l'APK.
 
 ## Navigation commune des atlas — paquet 1.1.3
