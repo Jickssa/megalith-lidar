@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.2.3 — navigation réciproque et cache diagnostic borné
+
+- Remplacement du lien UK qui rechargeait la carte courante par un accès direct à l’Atlas France.
+- Libellé du sélecteur harmonisé sur « Atlas UK » ; la page d’introduction UK est maintenant rédigée en français.
+- Conservation explicite de la distinction : l’interface cartographique britannique historique reste celle du dépôt amont et demeure en anglais.
+- Téléchargement des PNG de diagnostic limité à 8 Mio par fichier, avec contrôle du type MIME et de la signature PNG.
+- Redirections HTTP désactivées pour cette source fixe ; cache limité à 64 Mio, 24 fichiers et 30 jours, avec éviction des plus anciens.
+- Tests de navigation, de contrat natif et de limites du cache renforcés.
+
 ## 1.2.2 — navigation rectifiée après recette utilisateur
 
 - Restauration des accès directs depuis le sélecteur commun vers les deux véritables interfaces cartographiques : Atlas France et Atlas britannique.
