@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.3.0 — recherche archéologique française et CI
+
+- La taxonomie française pilote maintenant six familles de recherche OSM : mégalithes, tumulus, enceintes, sites romains, voies anciennes et patrimoine médiéval.
+- La recherche OSM tient compte du texte et de la catégorie choisis ; nodes, ways et relations sont pris en charge et normalisés.
+- Les requêtes refusent les emprises trop vastes ; les recherches précédentes sont annulées et les réponses périmées écartées.
+- Les métadonnées de l'autocomplétion POI IGN pointent vers `/geocodage/completion/` et exigent un `poiType` issu de GetCapabilities.
+- Le workflow CI couvre aussi les sources Android, le préparateur d'assets et l'interface UK.
+
+Cette version ne termine pas encore la sélection internationale, l'équivalence France STEP 1–3, ni la recherche POI IGN validée de bout en bout.
+
+
 ## 1.2.4 — recherche française cadrée
 
 - Le géocodeur IGN est désormais explicitement limité à la France métropolitaine via le paramètre `terr=METROPOLE`.
