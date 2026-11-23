@@ -139,6 +139,7 @@ if __name__ == "__main__":
         assert not list((self_host / "android/app/src/main/res").rglob("*.bak"))
         self_hook = (self_host / "scripts/prepare_android_assets.py").read_text(encoding="utf-8")
         assert self_hook.count("MONOLITH_FRANCE_INTEGRATION_V2") == 1
+        assert "france-home.html" in self_hook and "uk-home.html" in self_hook
         patched_activity = activity.read_text(encoding="utf-8")
         assert "/assets/web/atlas-home.html" in patched_activity
         assert "fileUploadCallback?.onReceiveValue(null)\n                    fileUploadCallback = null" in patched_activity

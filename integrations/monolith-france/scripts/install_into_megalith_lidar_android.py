@@ -321,7 +321,20 @@ def main() -> int:
                 raise RuntimeError("Unable to locate the unique UK header GitHub link for atlas navigation.")
             uk_index.write_text(uk_html.replace(uk_anchor, uk_link + uk_anchor, 1), encoding="utf-8")
 '''
+    home_source = (
+        "def build_atlas_home():" + chr(10)
+        + "    return " + repr(build_atlas_home()) + chr(10) + chr(10)
+    )
     if hook_marker in prepare_text:
+        # Upgrade the previously injected page generator as well as its hook.
+        home_start = prepare_text.find("def build_atlas_home():")
+        if home_start < 0:
+            raise RuntimeError("Existing atlas hook has no build_atlas_home() generator.")
+        home_end = prepare_text.find("def prepare_android_assets(", home_start)
+        if home_end < 0:
+            raise RuntimeError("Unable to locate prepare_android_assets() after the atlas page generator.")
+        prepare_text = prepare_text[:home_start] + home_source + prepare_text[home_end:]
+
         marker_line = "    # MONOLITH_FRANCE_INTEGRATION_V2:"
         start = prepare_text.find(marker_line)
         if start < 0:
@@ -340,10 +353,6 @@ def main() -> int:
         ]
         if len(function_indexes) != 1:
             raise RuntimeError("Expected exactly one prepare_android_assets() definition.")
-        home_source = (
-            "def build_atlas_home():" + chr(10)
-            + "    return " + repr(build_atlas_home()) + chr(10) + chr(10)
-        )
         if "def build_atlas_home():" not in prepare_text:
             function_index = function_indexes[0]
             source_lines = source_lines[:function_index] + [home_source] + source_lines[function_index:]
