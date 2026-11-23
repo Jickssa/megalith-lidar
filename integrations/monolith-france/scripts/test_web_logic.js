@@ -56,9 +56,9 @@ const bbox={getSouth:()=>47.1,getWest:()=>0.1,getNorth:()=>47.3,getEast:()=>0.4}
 assert.ok(queryBoxFromBounds(bbox).areaKm2>0,'emprise métrique approximative positive');
 assert.throws(()=>buildOverpassQuery({bounds:{getSouth:()=>91,getWest:()=>0,getNorth:()=>92,getEast:()=>1},category:'megaliths',taxonomy}),/invalide/);
 const osmQuery=buildOverpassQuery({bounds:bbox,category:'megaliths',taxonomy,query:'dolmen'});
-assert.match(osmQuery,/node\\["historic"="archaeological_site"\\]\\["archaeological_site"="megalith"\\]/,'nœud archéologique contraint au sous-type mégalithe');
-assert.match(osmQuery,/way\\["historic"="archaeological_site"\\]\\["archaeological_site"="megalith"\\]/,'conjonction de tags appliquée aux ways');
-assert.match(osmQuery,/relation\\["man_made"="cairn"\\]/,'cairn recherché sur les relations');
+assert.ok(osmQuery.includes('node["historic"="archaeological_site"]["archaeological_site"="megalith"]'),'nœud archéologique contraint au sous-type mégalithe');
+assert.ok(osmQuery.includes('way["historic"="archaeological_site"]["archaeological_site"="megalith"]'),'conjonction de tags appliquée aux ways');
+assert.ok(osmQuery.includes('relation["man_made"="cairn"]'),'cairn recherché sur les relations');
 assert.match(osmQuery,/name~"dolmen"/,'texte utilisateur appliqué à la requête');
 const safeRegexQuery=buildOverpassQuery({bounds:bbox,category:'megaliths',taxonomy,query:'barrow.*(east)'});
 assert.ok(safeRegexQuery.includes('name~"barrow\\\\.\\\\*\\\\(east\\\\)"'),'texte utilisateur échappé en regex littérale');
