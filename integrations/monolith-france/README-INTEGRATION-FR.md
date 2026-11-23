@@ -1,6 +1,6 @@
 # Monolith France — module cartographique LiDAR & archéologie
 
-**Version du paquet :** 1.1.2  
+**Version du paquet :** 1.1.3  
 **Langue / territoire initial :** français / France métropolitaine  
 **Cible :** intégration dans une APK Android hôte nommée « Monolith » via `WebViewAssetLoader`.
 
@@ -24,7 +24,7 @@ python3 integrations/monolith-france/scripts/install_into_megalith_lidar_android
 python3 integrations/monolith-france/scripts/install_into_megalith_lidar_android.py "$PWD"
 ```
 
-Le script vérifie d'abord les points d'insertion, sauvegarde les fichiers modifiés, ajoute le module sous `integrations/monolith-france/`, ajoute le hook de préparation des assets et le déclare comme entrée de la tâche Gradle. Il fait démarrer `MainActivity` sur `/assets/web/france/web/index.html`; l'atlas anglais reste disponible à `/assets/web/index.html`.
+Le script vérifie d'abord les points d'insertion, sauvegarde les fichiers modifiés, ajoute le module sous `integrations/monolith-france/`, ajoute le hook de préparation des assets et le déclare comme entrée de la tâche Gradle. Il fait démarrer `MainActivity` sur l'écran commun `/assets/web/atlas-home.html`, qui présente les deux destinations. Le fichier `/assets/web/index.html` de l'atlas britannique reste strictement à son emplacement historique pour préserver ses ressources relatives ; l'Atlas France reste sous `/assets/web/france/web/index.html`.
 
 L'intégration réutilise les permissions, le pont natif et le sélecteur de fichiers de l'application amont. Si Android ne peut pas ouvrir le sélecteur, le callback WebView reçoit explicitement `null` afin de libérer le contrôle HTML. Les sauvegardes source sont placées dans `.monolith-france-backups/`, exclu par le `.gitignore` racine. L'installateur reste limité à ces points d'insertion et ne modifie ni `applicationId`, ni `namespace`, ni la signature, ni les niveaux SDK.
 
@@ -37,6 +37,10 @@ bash integrations/monolith-france/scripts/integrate_and_build_codespace.sh "$PWD
 ```
 
 Elle prépare les ressources, exécute les contrôles, lance `assembleDebug`, puis vérifie l'alignement et la signature de debug. Elle ne publie pas de Release et ne pousse aucun commit.
+
+## Navigation entre atlas
+
+L'écran d'accueil commun présente deux accès internes : Atlas France (`/assets/web/france/web/index.html`) et Atlas britannique (`/assets/web/index.html`). Il est servi depuis `/assets/web/atlas-home.html`. L'installateur conserve l'index britannique sans le déplacer ni le remplacer. L'en-tête France propose « Choisir un atlas » pour revenir à l'accueil et un accès direct au Royaume-Uni.
 
 ## Fonctions
 1. France métropolitaine, locale `fr-FR`, coordonnées WGS84.
