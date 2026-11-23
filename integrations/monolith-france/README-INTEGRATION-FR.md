@@ -1,6 +1,6 @@
 # Monolith France — module cartographique LiDAR & archéologie
 
-**Version du paquet :** 1.2.3  
+**Version du paquet :** 1.2.4  
 **Langue / territoire initial :** français / France métropolitaine  
 **Cible :** intégration dans une APK Android hôte nommée « Monolith » via `WebViewAssetLoader`.
 
@@ -47,7 +47,7 @@ Le démarrage Android ouvre le sélecteur commun `/assets/web/atlas-home.html`. 
 2. Fonds Plan IGN v2 et OpenStreetMap.
 3. Couches IGN LiDAR HD MNT, MNS et MNH via WMTS.
 4. Recherche dédiée des POI mégalithiques IGN : désactivée dans cette version tant que le paramètre de catégorie et le schéma API ne sont pas vérifiés.
-5. Recherche d'adresses et de lieux via le géocodeur de la Géoplateforme (à tester en ligne dans la WebView Android).
+5. Recherche d'adresses et de lieux via le géocodeur de la Géoplateforme, limitée à la France métropolitaine (`terr=METROPOLE`) ; plafond configurable de 30 résultats et tests unitaires de l'URL générée (à tester en ligne dans la WebView Android).
 6. Recherche OSM de sites archéologiques dans l'emprise cartographique (données contributives non exhaustives, résultats à recouper).
 7. Géolocalisation à la demande ; relevés sauvegardés localement ; import/export GeoJSON.
 8. Validation des GeoJSON importés (points WGS84, taille et nombre cumulé) avec plafond local de 5 000 observations.
