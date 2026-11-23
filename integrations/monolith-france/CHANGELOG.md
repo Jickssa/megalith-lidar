@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.4 — recherche française cadrée
+
+- Le géocodeur IGN est désormais explicitement limité à la France métropolitaine via le paramètre `terr=METROPOLE`.
+- Le nombre maximal de résultats est piloté par la configuration et plafonné à 30 pour conserver un affichage réactif.
+- Le seuil de zoom minimal d'Overpass est lu depuis la configuration au lieu d'être codé en dur.
+- Les tests couvrent les URLs générées, le territoire, les limites de résultat et les valeurs de configuration invalides.
+
 ## 1.2.3 — navigation réciproque et cache diagnostic borné
 
 - Remplacement du lien UK qui rechargeait la carte courante par un accès direct à l’Atlas France.
