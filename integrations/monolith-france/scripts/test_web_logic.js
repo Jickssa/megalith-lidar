@@ -31,9 +31,9 @@ assert.equal(isGeoJsonFile({name:'archive.zip',type:'application/zip'}),false,'a
 console.log('PASS — GeoJSON validation, WGS84 ranges, MIME/extension filter, size limits and configuration fallbacks.');
 
 const searchSettings=getSearchSettings({search:{maxResults:250,osmMinimumZoom:9,territory:'METROPOLE'}});
-assert.deepEqual(searchSettings,{maxResults:30,osmMinimumZoom:9,territory:'METROPOLE'},'plafond de résultats et territoire métropolitain');
+assert.deepEqual(searchSettings,{maxResults:30,osmMinimumZoom:9,territory:'METROPOLE',maxSearchAreaKm2:2500},'plafond de résultats, territoire et emprise maximale');
 const fallbackSearch=getSearchSettings({search:{maxResults:-2,osmMinimumZoom:30,territory:'UNKNOWN'}});
-assert.deepEqual(fallbackSearch,{maxResults:30,osmMinimumZoom:19,territory:'METROPOLE'},'valeurs de recherche invalides ramenées aux valeurs sûres');
+assert.deepEqual(fallbackSearch,{maxResults:30,osmMinimumZoom:19,territory:'METROPOLE',maxSearchAreaKm2:2500},'valeurs de recherche invalides ramenées aux valeurs sûres');
 const placeUrl=buildPlaceSearchUrl('  dolmen  ',{search:{maxResults:12,osmMinimumZoom:8,territory:'METROPOLE'}});
 assert.equal(placeUrl.origin,'https://data.geopf.fr','endpoint officiel Géoplateforme');
 assert.equal(placeUrl.pathname,'/geocodage/search','route de géocodage direct');
