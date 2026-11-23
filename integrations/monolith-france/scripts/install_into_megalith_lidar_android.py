@@ -204,9 +204,9 @@ def main() -> int:
         if len(anchor_indexes) != 1:
             raise RuntimeError("Expected exactly one OsmAnd export anchor in prepare_android_assets.py.")
         anchor_index = anchor_indexes[0]
-        if not source_lines[anchor_index].endswith(("\\n", "\\r")):
+        if not source_lines[anchor_index].endswith((chr(10), chr(13))):
             raise RuntimeError("OsmAnd export anchor must terminate at a line boundary.")
-        home_source = "def build_atlas_home():\\n    return " + repr(build_atlas_home()) + "\\n\\n"
+        home_source = "def build_atlas_home():" + chr(10) + "    return " + repr(build_atlas_home()) + chr(10) + chr(10)
         insertion = "".join(source_lines[:anchor_index]) + home_source + "".join(source_lines[anchor_index:anchor_index + 1]) + hook + "".join(source_lines[anchor_index + 1:])
         backup_once(prepare, repo)
         prepare.write_text(insertion, encoding="utf-8")
