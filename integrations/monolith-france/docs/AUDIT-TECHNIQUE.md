@@ -23,6 +23,7 @@ Les modèles et jeux de données amont sont liés à l'Angleterre : British Nati
 1. Utiliser WGS84/EPSG:4326 comme CRS d'échange.
 2. Centrer la carte sur la France métropolitaine.
 3. Utiliser Plan IGN v2 et les couches LiDAR HD MNT, MNS, MNH via WMTS Géoplateforme.
+4. Filtrer le géocodage direct par `terr=METROPOLE`, cohérent avec le territoire couvert par cette interface ; plafonner les résultats à 30 et lire le seuil OSM depuis la configuration. Documentation Géoplateforme : https://cartes.gouv.fr/aide/fr/guides-utilisateur/utiliser-les-services-de-la-geoplateforme/geocodage/.
 4. Résoudre le filtre POI « mégalithe » par découverte dynamique de sa catégorie parente dans les capacités de l'API ; ne pas traiter « mégalithe » comme catégorie racine sans résolution.
 5. Utiliser le géocodeur IGN pour les lieux/adresses, Overpass pour les éléments OSM et les données ouvertes du ministère de la Culture uniquement comme recoupement.
 6. Sauvegarder les observations dans le WebView et permettre l'import/export GeoJSON.
