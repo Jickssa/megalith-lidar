@@ -147,6 +147,15 @@ if __name__ == "__main__":
         assert "File.createTempFile" in actual_activity
         assert "fileChooserParams.acceptTypes" in actual_activity
         assert "uri.userInfo == null" in actual_activity
+        for native_contract in (
+            "MAX_DIAGNOSTIC_FILE_BYTES",
+            "MAX_DIAGNOSTIC_CACHE_BYTES",
+            "MAX_DIAGNOSTIC_CACHE_FILES",
+            "instanceFollowRedirects = false",
+            "isValidDiagnosticPng",
+            "trimDiagnosticCache",
+        ):
+            assert native_contract in actual_activity, native_contract
         assert "fileUploadCallback?.onReceiveValue(null)\n                    fileUploadCallback = null" in patched_activity
         assert "Megalith LiDAR France" in strings.read_text(encoding="utf-8")
         backup_root = repo / ".monolith-france-backups"
@@ -170,6 +179,7 @@ if __name__ == "__main__":
         assert "Choisir un atlas" in home
         assert 'href="/assets/web/france/web/index.html"' in home
         assert 'href="/assets/web/index.html"' in home
+        assert "Atlas UK" in home and "Ouvrir l’Atlas UK" in home
         assert "/assets/web/france-home.html" not in home
         assert "/assets/web/uk-home.html" not in home
 
@@ -178,7 +188,7 @@ if __name__ == "__main__":
         assert 'lang="fr"' in france_home and "Accueil France" in france_home
         assert 'href="/assets/web/france/web/index.html"' in france_home
         assert 'href="/assets/web/uk-home.html"' in france_home
-        assert 'lang="en-GB"' in uk_home and "This is the territory introduction, not the map itself" in uk_home
+        assert 'lang="fr"' in uk_home and "Cette page présente le territoire" in uk_home
         assert 'href="/assets/web/index.html"' in uk_home
         assert 'href="/assets/web/france-home.html"' in uk_home
 
@@ -186,8 +196,9 @@ if __name__ == "__main__":
         assert 'id="uk-atlas"' in uk_html and "UK atlas" in uk_html
         assert uk_html.count('data-monolith-atlas-home="true"') == 1
         assert 'href="/assets/web/atlas-home.html"' in uk_html
-        assert 'data-monolith-uk-atlas="true"' in uk_html
-        assert 'href="/assets/web/index.html"' in uk_html
+        assert 'data-monolith-france-atlas="true"' in uk_html
+        assert 'href="/assets/web/france/web/index.html"' in uk_html
+        assert 'href="/assets/web/index.html" data-monolith-uk-atlas="true"' not in uk_html
 
         france_html = (assets / "france/web/index.html").read_text(encoding="utf-8")
         assert 'href="/assets/web/france-home.html"' in france_html
