@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.2.0 — 2026-11-23
+
+- Ajout de deux pages d'accueil territoriales distinctes entre le sélecteur commun et les Atlas France / Royaume-Uni.
+- Le sélecteur commun ouvre désormais les accueils France et Royaume-Uni ; chaque accueil propose un accès explicite à l'Atlas complet correspondant.
+- Navigation de retour vers le sélecteur et de bascule entre territoires ; le module France expose également son accueil territorial.
+- Ajout dans la copie Android de l'Atlas britannique d'un lien « Choose atlas », sans modifier le fichier source britannique.
+- Mise à niveau idempotente du hook de génération : un hook 1.1.x existant est remplacé proprement au lieu de rester obsolète.
+- Correction de l'ordre de sauvegarde du préparateur Android : la copie de sauvegarde est créée avant modification.
+- Tests étendus pour contrôler les routes, les pages cibles, les appels vers les véritables atlas et l'immuabilité de la source britannique.
+
+
 ## 1.1.4 — 2026-11-23
 
 - Correction de l'insertion du hook Android après contrôle sur le véritable préparateur `prepare_android_assets.py`.

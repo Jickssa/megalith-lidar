@@ -97,7 +97,14 @@ def prepare_android_assets():
         shutil.rmtree(web_out)
     docs_out.mkdir(parents=True, exist_ok=True)
     leaflet_out.mkdir(parents=True, exist_ok=True)
-    (web_out / "index.html").write_text("<html>UK atlas</html>", encoding="utf-8")
+    (web_out / "index.html").write_text(
+        """<html><body><header>
+      <a class="btn-link" href="https://github.com/GlassOnTin/megalith-lidar" target="_blank" rel="noopener" title="Source code, model checkpoints, and documentation (AGPL-3.0)">
+        GitHub ↗
+      </a>
+      </header><main id="uk-atlas">UK atlas</main></body></html>""",
+        encoding="utf-8",
+    )
     export_osmand_files(docs_out, updated_utc=updated_utc, include_obf=False)
 if __name__ == "__main__":
     prepare_android_assets()
@@ -155,12 +162,29 @@ if __name__ == "__main__":
         assets = repo / "android/app/src/main/assets/web"
         home = (assets / "atlas-home.html").read_text(encoding="utf-8")
         assert "Choisir un atlas" in home
-        assert "/assets/web/france/web/index.html" in home
-        assert "/assets/web/index.html" in home
-        assert (assets / "index.html").read_text(encoding="utf-8") == "<html>UK atlas</html>"
+        assert "/assets/web/france-home.html" in home
+        assert "/assets/web/uk-home.html" in home
+        assert "/assets/web/france/web/index.html" not in home
+        assert "/assets/web/index.html" not in home
+
+        france_home = (assets / "france-home.html").read_text(encoding="utf-8")
+        uk_home = (assets / "uk-home.html").read_text(encoding="utf-8")
+        assert 'lang="fr"' in france_home and "Accueil France" in france_home
+        assert 'href="/assets/web/france/web/index.html"' in france_home
+        assert 'href="/assets/web/uk-home.html"' in france_home
+        assert 'lang="en-GB"' in uk_home and "Explore the UK Atlas" in uk_home
+        assert 'href="/assets/web/index.html"' in uk_home
+        assert 'href="/assets/web/france-home.html"' in uk_home
+
+        uk_html = (assets / "index.html").read_text(encoding="utf-8")
+        assert 'id="uk-atlas"' in uk_html and "UK atlas" in uk_html
+        assert uk_html.count('data-monolith-atlas-home="true"') == 1
+        assert 'href="/assets/web/atlas-home.html"' in uk_html
+
         france_html = (assets / "france/web/index.html").read_text(encoding="utf-8")
+        assert 'href="/assets/web/france-home.html"' in france_html
         assert "/assets/web/atlas-home.html" in france_html
-        assert "/assets/web/index.html" in france_html
+        assert "/assets/web/uk-home.html" in france_html
         assert (assets / "france/web/index.html").is_file()
         assert (assets / "france/config/france-config.json").is_file()
         expected_sizes = {
@@ -183,6 +207,11 @@ if __name__ == "__main__":
         real_repo = Path(tmp) / "real-upstream-fixture"
         shutil.copytree(repo, real_repo)
         real_prepare = real_repo / "scripts/prepare_android_assets.py"
+        upstream_index = ROOT.parents[1] / "index.html"
+        real_index = real_repo / "index.html"
+        shutil.copy2(upstream_index, real_index)
+        import hashlib
+        uk_source_sha_before = hashlib.sha256(real_index.read_bytes()).hexdigest()
         upstream_prepare = ROOT.parents[1] / "scripts/prepare_android_assets.py"
         shutil.copy2(upstream_prepare, real_prepare)
         subprocess.run([sys.executable, str(INSTALLER), str(real_repo), "--force"], check=True)
@@ -193,7 +222,9 @@ if __name__ == "__main__":
         assert real_text.count("export_osmand_files(docs_out, updated_utc=updated_utc, include_obf=False)") == 1
         assert "def build_atlas_home():" in real_text
         assert "atlas-home.html" in real_text
-        print("PASS — dry-run, backups, chooser routes, preserved UK index, re-install, fixture and real-upstream hook.")
+        assert "france-home.html" in real_text and "uk-home.html" in real_text
+        assert hashlib.sha256(real_index.read_bytes()).hexdigest() == uk_source_sha_before
+        print("PASS — dry-run, backups, three-level navigation, immutable UK source, re-install, fixture and real-upstream hook.")
     return 0
 
 

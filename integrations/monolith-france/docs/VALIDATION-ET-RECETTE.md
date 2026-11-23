@@ -1,4 +1,29 @@
-# Validation et recette — Monolith France 1.1.3 / build #110
+# Validation et recette — Monolith France 1.2.0
+
+## Parcours cible
+
+- Démarrage → `assets/web/atlas-home.html` (sélecteur commun).
+- Sélecteur → `assets/web/france-home.html` → `assets/web/france/web/index.html` (Atlas France).
+- Sélecteur → `assets/web/uk-home.html` → `assets/web/index.html` (Atlas britannique original).
+- Les pages territoriales offrent un retour au sélecteur et un accès à l'accueil de l'autre territoire.
+- La copie embarquée de l'Atlas britannique ajoute un lien `Choose atlas` vers le sélecteur ; sa source est contrôlée comme immuable.
+
+## Contrôles 1.2.0
+
+- Tests de génération des trois pages et des liens entre elles.
+- Contrôle des CTA vers les deux interfaces cartographiques complètes.
+- Vérification du lien de retour injecté une seule fois dans l'Atlas britannique embarqué.
+- Vérification de l'absence de modification du fichier source britannique.
+- Vérification de la mise à niveau/réinstallation du hook existant.
+- Résultats CI et compilation APK : à compléter après exécution du workflow.
+
+## Écart documentaire avec l'APK originale fournie
+
+L'APK inspectée (SHA-256 `cf6362d6c5513c08740f2b0f58ac3178f29b11f0584117a2b3bd2911d6bdd3dd`) contient une unique page Web `assets/web/index.html`, directement chargée par Android. Le DEX référence `https://appassets.androidplatform.net/assets/web/index.html`. Aucun second HTML et aucun bouton « Atlas britannique » n'ont été trouvés dans cette APK. Le parcours à trois niveaux est donc une évolution nouvelle de Monolith, non une reproduction démontrée d'une navigation absente de ce binaire.
+
+---
+
+# Historique — validation et recette Monolith France 1.1.3 / build #110
 
 ## CI automatisée
 

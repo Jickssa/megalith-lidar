@@ -1,6 +1,6 @@
 # Monolith France — module cartographique LiDAR & archéologie
 
-**Version du paquet :** 1.1.3  
+**Version du paquet :** 1.2.0  
 **Langue / territoire initial :** français / France métropolitaine  
 **Cible :** intégration dans une APK Android hôte nommée « Monolith » via `WebViewAssetLoader`.
 
@@ -38,9 +38,9 @@ bash integrations/monolith-france/scripts/integrate_and_build_codespace.sh "$PWD
 
 Elle prépare les ressources, exécute les contrôles, lance `assembleDebug`, puis vérifie l'alignement et la signature de debug. Elle ne publie pas de Release et ne pousse aucun commit.
 
-## Navigation entre atlas
+## Navigation entre atlas — architecture à trois niveaux
 
-L'écran d'accueil commun présente deux accès internes : Atlas France (`/assets/web/france/web/index.html`) et Atlas britannique (`/assets/web/index.html`). Il est servi depuis `/assets/web/atlas-home.html`. L'installateur conserve l'index britannique sans le déplacer ni le remplacer. L'en-tête France propose « Choisir un atlas » pour revenir à l'accueil et un accès direct au Royaume-Uni.
+Le démarrage Android ouvre le sélecteur commun `/assets/web/atlas-home.html`. Celui-ci conduit aux deux pages territoriales intermédiaires : `/assets/web/france-home.html` et `/assets/web/uk-home.html`. Chaque page dispose d'un bouton d'action supérieur qui ouvre l'Atlas correspondant : France (`/assets/web/france/web/index.html`) ou Royaume-Uni (`/assets/web/index.html`). Les pages territoriales permettent de revenir au sélecteur et de basculer vers l'autre territoire. L'Atlas France propose également les liens « Accueil France » et « Choisir un atlas ». Dans l'Atlas britannique, le préparateur ajoute un seul lien « Choose atlas » à l'en-tête de la copie embarquée ; le fichier source racine `index.html` reste inchangé. Les deux pages territoriales sont générées par l'installateur après la reconstruction des assets : elles ne sont pas des copies des interfaces cartographiques.
 
 ## Fonctions
 1. France métropolitaine, locale `fr-FR`, coordonnées WGS84.

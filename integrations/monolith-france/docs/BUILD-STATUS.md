@@ -1,5 +1,15 @@
 # État de validation — Monolith France
 
+## Navigation version 1.2.0 — en cours de validation
+
+- L'APK originale jointe a été inspectée directement : SHA-256 `cf6362d6c5513c08740f2b0f58ac3178f29b11f0584117a2b3bd2911d6bdd3dd`; elle embarque une seule page HTML (`assets/web/index.html`) et le DEX référence `/assets/web/index.html` comme URL de démarrage. Ce binaire ne contient pas de page d'accueil territoriale ni de bouton « Atlas britannique » dans l'en-tête. Il ne permet donc pas de confirmer le parcours décrit pour une autre version/site.
+- Pour réaliser le parcours demandé sans déplacer ni dupliquer les interfaces existantes, la version 1.2.0 ajoute une étape d'accueil territoriale : sélecteur commun → accueil France/Royaume-Uni → Atlas correspondant.
+- Les pages territoriales sont générées après la reconstruction des assets ; les deux interfaces cartographiques restent à leurs chemins historiques.
+- La copie embarquée de l'Atlas britannique reçoit un lien de retour au sélecteur. Le fichier source racine `index.html` reste inchangé.
+- Le hook de génération existant est mis à niveau en place lors d'une réinstallation ; la sauvegarde du préparateur est désormais prise avant l'écriture.
+- Résultats CI 1.2.0 : à renseigner après le workflow déclenché par ce commit.
+
+
 ## État GitHub
 
 - Dépôt : `Jickssa/megalith-lidar`.
