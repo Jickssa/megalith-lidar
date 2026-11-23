@@ -1,37 +1,36 @@
-# Validation 1.2.4 — navigation, sécurité et recherche territoriale
+# Validation 1.3.0 — recherche française et CI
 
-## Navigation embarquée
+## Implémentation présente
 
-- Le sélecteur Android ouvre directement les deux interfaces cartographiques : `/assets/web/france/web/index.html` et `/assets/web/index.html`.
-- Les pages `france-home.html` et `uk-home.html` sont des présentations secondaires, pas les cartes.
-- Depuis l'Atlas UK, « Choose atlas » retourne au sélecteur et « France Atlas » mène à la carte France.
-- L'Atlas UK historique reste en anglais ; sa page d'introduction est en français.
+- La taxonomie décrit six familles OSM et leurs règles de recherche.
+- La catégorie sélectionnée commande les clauses Overpass.
+- Le texte saisi est ajouté comme filtre sur les noms.
+- Les requêtes incluent nodes, ways et relations.
+- Les résultats sont normalisés avec type, identifiant OSM, coordonnées et lien vers la source.
+- Les emprises trop importantes sont refusées.
+- Les recherches antérieures sont annulées ; les réponses asynchrones périmées ne remplacent pas les résultats courants.
+- La recherche de lieux IGN reste séparée de la recherche OSM.
+- Le service d'autocomplétion POI est déclaré sur son endpoint dédié ; le type POI doit être découvert, non inventé.
 
-## Recherche territoriale France
+## Tests déterministes ajoutés
 
-- La recherche IGN utilise le paramètre `terr=METROPOLE` pour ne pas mélanger les résultats des DOM-TOM avec la carte de France métropolitaine.
-- La limite de résultats vient de la configuration et est plafonnée à 30.
-- Le seuil de zoom de recherche OSM est lu depuis la configuration (8 par défaut).
-- Les tests vérifient l'URL produite, le filtre territorial, le plafonnement, les valeurs incorrectes et le seuil de zoom.
+- taxonomie et unicité des identifiants ;
+- construction de l'emprise ;
+- requêtes Overpass par catégorie ;
+- échappement des valeurs ;
+- filtre textuel ;
+- nodes/ways/relations ;
+- rejet d'emprise excessive ;
+- conversion d'objet OSM et liens sources ;
+- URL d'autocomplétion POI IGN.
 
-## Sécurité Android
+## Vérifications encore nécessaires
 
-- Images diagnostics limitées à 8 Mio, MIME et signature PNG validés, redirections interdites.
-- Cache borné à 64 Mio et 24 fichiers, rétention maximale de 30 jours.
-- Export natif plafonné et écrit hors du thread UI.
-- Import GeoJSON validé en extension/MIME, structure FeatureCollection et coordonnées WGS84.
+- Exécuter la suite Node et le validateur sur le commit complet.
+- Vérifier par tests réseau les réponses réelles d'Overpass et de l'IGN.
+- Interroger GetCapabilities POI et contrôler le type correspondant aux mégalithes avant d'activer cette recherche.
+- Interroger les capacités WMTS et valider les couches en emprises connues.
+- Vérifier l'interface sur Android.
+- Vérifier les fonctions originales UK après compilation.
 
-## CI 1.2.4
-
-Workflow push #146 : succès complet — https://github.com/Jickssa/megalith-lidar/actions/runs/45154564962
-
-- Validateur paquet : succès.
-- Syntaxe JavaScript et Python : succès.
-- Tests Node et fixture d'installateur : succès.
-- Android Gradle `assembleDebug` : succès.
-- Intégrité ZIP, `zipalign`, `apksigner verify` : succès.
-- APK : 19 024 313 octets, 97 entrées, SHA-256 `34804ea112838dfced2260801b262f6e186e75af1d588427b3e113ea7654677a`.
-
-## Limites
-
-La recette physique sur téléphone Android reste non exécutée. La compatibilité de signature avec la version déjà installée n'a pas été établie ; sauvegarder les relevés GeoJSON avant toute tentative de remplacement.
+Aucun résultat réseau ni test physique n'est déclaré réussi sans exécution réelle.
