@@ -1,6 +1,6 @@
 # Monolith France — module cartographique LiDAR & archéologie
 
-**Version du paquet :** 1.1.1  
+**Version du paquet :** 1.1.2  
 **Langue / territoire initial :** français / France métropolitaine  
 **Cible :** intégration dans une APK Android hôte nommée « Monolith » via `WebViewAssetLoader`.
 
@@ -26,7 +26,7 @@ python3 integrations/monolith-france/scripts/install_into_megalith_lidar_android
 
 Le script vérifie d'abord les points d'insertion, sauvegarde les fichiers modifiés, ajoute le module sous `integrations/monolith-france/`, ajoute le hook de préparation des assets et le déclare comme entrée de la tâche Gradle. Il fait démarrer `MainActivity` sur `/assets/web/france/web/index.html`; l'atlas anglais reste disponible à `/assets/web/index.html`.
 
-L'intégration réutilise les permissions, le pont natif et le sélecteur de fichiers de l'application amont. Elle ne modifie ni `applicationId`, ni `namespace`, ni la signature, ni les niveaux SDK.
+L'intégration réutilise les permissions, le pont natif et le sélecteur de fichiers de l'application amont. Si Android ne peut pas ouvrir le sélecteur, le callback WebView reçoit explicitement `null` afin de libérer le contrôle HTML. Les sauvegardes source sont placées dans `.monolith-france-backups/`, exclu par le `.gitignore` racine. L'installateur reste limité à ces points d'insertion et ne modifie ni `applicationId`, ni `namespace`, ni la signature, ni les niveaux SDK.
 
 ## Compilation Debug
 
@@ -46,6 +46,7 @@ Elle prépare les ressources, exécute les contrôles, lance `assembleDebug`, pu
 5. Recherche d'adresses et de lieux via le géocodeur de la Géoplateforme (à tester en ligne dans la WebView Android).
 6. Recherche OSM de sites archéologiques dans l'emprise cartographique (données contributives non exhaustives, résultats à recouper).
 7. Géolocalisation à la demande ; relevés sauvegardés localement ; import/export GeoJSON.
+8. Validation des GeoJSON importés (points WGS84, taille et nombre cumulé) avec plafond local de 5 000 observations.
 
 ## Limites scientifiques
 **Aucune détection IA française n'est activée.** Le dépôt amont ne fournit pas de poids de modèles prêts à l'emploi et les modèles / résultats britanniques ne sont pas transposables à la France. Les anomalies visibles sur une couche LiDAR ne sont pas classées comme découvertes. La couverture IGN LiDAR HD est progressive et les bases IGN/OSM ne forment pas un inventaire archéologique exhaustif.
