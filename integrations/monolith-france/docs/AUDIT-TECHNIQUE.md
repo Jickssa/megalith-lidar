@@ -60,7 +60,7 @@ Les zones tactiles sont portées à 40 px minimum pour les commandes principales
 
 ### Limites résiduelles à traiter
 
-- Les téléchargements PNG de diagnostic depuis GitHub ne possèdent pas encore de limite explicite de taille de réponse ni de politique de nettoyage du cache.
+- Les téléchargements PNG de diagnostic sont maintenant limités à 8 Mio par fichier ; le type MIME et la signature binaire PNG sont vérifiés. Les redirections sont désactivées pour la source fixe ; le cache est borné à 64 Mio, 24 fichiers et 30 jours, avec éviction par date de dernier accès.
 - Le pont `addJavascriptInterface` est visible dans tous les frames d'une page WebView selon Android ; les pages actuelles ne contiennent pas d'iframe distante identifiée, mais l'ajout futur de contenu embarqué non fiable devra être interdit ou isolé.
 - Le bouton Retour reste implémenté via la méthode historique `onBackPressed` ; il doit être testé sur versions Android récentes avec navigation prédictive.
 - L'identifiant d'application est resté `uk.megalith.lidar`. L'APK de base et l'APK Debug ont le même applicationId ; la compatibilité de signature n'a pas été démontrée par la seule inspection des archives.
