@@ -173,7 +173,18 @@ def main() -> int:
     android_activity = ROOT.parents[1] / "android/app/src/main/java/uk/megalith/lidar/MainActivity.kt"
     if android_activity.is_file():
         native_text = android_activity.read_text(encoding="utf-8")
-        for native_contract in ("MAX_EXPORT_BYTES", "File.createTempFile", "fileChooserParams.acceptTypes", "uri.userInfo == null"):
+        for native_contract in (
+            "MAX_EXPORT_BYTES",
+            "File.createTempFile",
+            "fileChooserParams.acceptTypes",
+            "uri.userInfo == null",
+            "MAX_DIAGNOSTIC_FILE_BYTES",
+            "MAX_DIAGNOSTIC_CACHE_BYTES",
+            "MAX_DIAGNOSTIC_CACHE_FILES",
+            "instanceFollowRedirects = false",
+            "isValidDiagnosticPng",
+            "trimDiagnosticCache",
+        ):
             if native_contract not in native_text:
                 ERRORS.append(f"Contrôle Android de sécurité absent : {native_contract}")
     else:
