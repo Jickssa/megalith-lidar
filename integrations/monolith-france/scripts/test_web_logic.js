@@ -1,6 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict');
-const {getStorageLimits,isValidObservationFeature,parseObservationImport,isGeoJsonFile,getSearchSettings,buildPlaceSearchUrl,normalizeTaxonomy,escapeOverpassValue,queryBoxFromBounds,buildOverpassQuery,osmElementToItem,buildPoiAutocompleteUrl}=require('../web/app.js');
+const {getStorageLimits,isValidObservationFeature,parseObservationImport,isGeoJsonFile,getSearchSettings,buildPlaceSearchUrl,normalizeTaxonomy,escapeOverpassValue,escapeOverpassRegex,buildOverpassTagSelector,queryBoxFromBounds,buildOverpassQuery,osmElementToItem,buildPoiAutocompleteUrl}=require('../web/app.js');
 const point=(lon,lat,properties={title:'test'})=>({type:'Feature',geometry:{type:'Point',coordinates:[lon,lat]},properties});
 
 assert.equal(isValidObservationFeature(point(2.35,48.86)),true,'coordonnées WGS84 valides');
@@ -50,14 +50,20 @@ assert.ok(normalTaxonomy.length>=5,'taxonomie archéologique riche et exploitabl
 assert.ok(normalTaxonomy.some(category=>category.id==='megaliths'),'catégorie mégalithes présente');
 assert.ok(normalTaxonomy.some(category=>category.id==='roman'),'catégorie romaine présente');
 assert.equal(escapeOverpassValue('D"Artagnan\\Site'),'D\\"Artagnan\\\\Site','échappement Overpass');
+assert.equal(escapeOverpassRegex('barrow.*(east)'), 'barrow\\.\\*\\(east\\)', 'les caractères regex du texte sont littéraux');
+assert.equal(buildOverpassTagSelector({historic:'archaeological_site',archaeological_site:'megalith'}),'["historic"="archaeological_site"]["archaeological_site"="megalith"]','conjonction de tags OSM');
 const bbox={getSouth:()=>47.1,getWest:()=>0.1,getNorth:()=>47.3,getEast:()=>0.4};
 assert.ok(queryBoxFromBounds(bbox).areaKm2>0,'emprise métrique approximative positive');
 assert.throws(()=>buildOverpassQuery({bounds:{getSouth:()=>91,getWest:()=>0,getNorth:()=>92,getEast:()=>1},category:'megaliths',taxonomy}),/invalide/);
 const osmQuery=buildOverpassQuery({bounds:bbox,category:'megaliths',taxonomy,query:'dolmen'});
-assert.match(osmQuery,/node\["historic"="archaeological_site"\]/,'requête nodes');
-assert.match(osmQuery,/way\["archaeological_site"="megalith"\]/,'requête ways');
-assert.match(osmQuery,/relation\["man_made"="cairn"\]/,'requête relations');
+assert.match(osmQuery,/node\\["historic"="archaeological_site"\\]\\["archaeological_site"="megalith"\\]/,'nœud archéologique contraint au sous-type mégalithe');
+assert.match(osmQuery,/way\\["historic"="archaeological_site"\\]\\["archaeological_site"="megalith"\\]/,'conjonction de tags appliquée aux ways');
+assert.match(osmQuery,/relation\\["man_made"="cairn"\\]/,'cairn recherché sur les relations');
 assert.match(osmQuery,/name~"dolmen"/,'texte utilisateur appliqué à la requête');
+const safeRegexQuery=buildOverpassQuery({bounds:bbox,category:'megaliths',taxonomy,query:'barrow.*(east)'});
+assert.ok(safeRegexQuery.includes('name~"barrow\\\\.\\\\*\\\\(east\\\\)"'),'texte utilisateur échappé en regex littérale');
+const roadQuery=buildOverpassQuery({bounds:bbox,category:'ancient-roads',taxonomy});
+assert.doesNotMatch(roadQuery,/highway"="track/,'les pistes génériques ne sont pas traitées comme voies antiques');
 assert.throws(()=>buildOverpassQuery({bounds:{getSouth:()=>40,getWest:()=>-5,getNorth:()=>55,getEast:()=>10},category:'megaliths',taxonomy}),/trop vaste/);
 assert.throws(()=>buildOverpassQuery({bounds:bbox,category:'inconnue',taxonomy}),/inconnue/);
 const osmItem=osmElementToItem({type:'way',id:42,center:{lat:47.2,lon:0.2},tags:{name:'Dolmen test',historic:'archaeological_site',archaeological_site:'megalith',megalith_type:'dolmen'}});
