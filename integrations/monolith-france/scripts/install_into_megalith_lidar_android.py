@@ -196,9 +196,20 @@ def main() -> int:
         (web_out / "atlas-home.html").write_text(build_atlas_home(), encoding="utf-8")
 '''
     if hook_marker not in prepare_text:
-        anchor = "    export_osmand_files(docs_out, updated_utc=updated_utc, include_obf=False)\\n"
+        source_lines = prepare_text.splitlines(keepends=True)
+        anchor_indexes = [
+            index for index, line in enumerate(source_lines)
+            if "export_osmand_files(docs_out, updated_utc=updated_utc, include_obf=False)" in line
+        ]
+        if len(anchor_indexes) != 1:
+            raise RuntimeError("Expected exactly one OsmAnd export anchor in prepare_android_assets.py.")
+        anchor_index = anchor_indexes[0]
+        if not source_lines[anchor_index].endswith(("\\n", "\\r")):
+            raise RuntimeError("OsmAnd export anchor must terminate at a line boundary.")
         home_source = "def build_atlas_home():\\n    return " + repr(build_atlas_home()) + "\\n\\n"
-        replace_text_once(prepare, repo, anchor, home_source + anchor + hook, hook_marker)
+        insertion = "".join(source_lines[:anchor_index]) + home_source + "".join(source_lines[anchor_index:anchor_index + 1]) + hook + "".join(source_lines[anchor_index + 1:])
+        backup_once(prepare, repo)
+        prepare.write_text(insertion, encoding="utf-8")
 
     # Register the module folder as a task input so Gradle rebuilds assets when it changes.
     gradle_text = gradle.read_text(encoding="utf-8")
