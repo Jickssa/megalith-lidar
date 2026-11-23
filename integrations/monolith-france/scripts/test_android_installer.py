@@ -50,7 +50,7 @@ def main() -> int:
 class MainActivity {
     fun saveOrShareFile(filename: String, mimeType: String, content: String) {}
     private var fileUploadCallback: ValueCallback<Array<Uri>>? = null
-    fun onShowFileChooserFixture() {
+    fun onShowFileChooser() {
         object {
             fun choose() {
                 try {
