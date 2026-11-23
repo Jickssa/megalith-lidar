@@ -197,6 +197,19 @@ def main() -> int:
 '''
     if hook_marker not in prepare_text:
         source_lines = prepare_text.splitlines(keepends=True)
+        function_indexes = [
+            index for index, line in enumerate(source_lines)
+            if line.startswith("def prepare_android_assets():")
+        ]
+        if len(function_indexes) != 1:
+            raise RuntimeError("Expected exactly one prepare_android_assets() definition.")
+        home_source = (
+            "def build_atlas_home():" + chr(10)
+            + "    return " + repr(build_atlas_home()) + chr(10) + chr(10)
+        )
+        if "def build_atlas_home():" not in prepare_text:
+            function_index = function_indexes[0]
+            source_lines = source_lines[:function_index] + [home_source] + source_lines[function_index:]
         anchor_indexes = [
             index for index, line in enumerate(source_lines)
             if "export_osmand_files(docs_out, updated_utc=updated_utc, include_obf=False)" in line
@@ -204,12 +217,9 @@ def main() -> int:
         if len(anchor_indexes) != 1:
             raise RuntimeError("Expected exactly one OsmAnd export anchor in prepare_android_assets.py.")
         anchor_index = anchor_indexes[0]
-        if not source_lines[anchor_index].endswith((chr(10), chr(13))):
-            raise RuntimeError("OsmAnd export anchor must terminate at a line boundary.")
-        home_source = "def build_atlas_home():" + chr(10) + "    return " + repr(build_atlas_home()) + chr(10) + chr(10)
-        insertion = "".join(source_lines[:anchor_index]) + home_source + "".join(source_lines[anchor_index:anchor_index + 1]) + hook + "".join(source_lines[anchor_index + 1:])
+        source_lines = source_lines[:anchor_index + 1] + [hook] + source_lines[anchor_index + 1:]
+        prepare.write_text("".join(source_lines), encoding="utf-8")
         backup_once(prepare, repo)
-        prepare.write_text(insertion, encoding="utf-8")
 
     # Register the module folder as a task input so Gradle rebuilds assets when it changes.
     gradle_text = gradle.read_text(encoding="utf-8")
