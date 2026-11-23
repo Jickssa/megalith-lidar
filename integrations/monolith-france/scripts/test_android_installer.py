@@ -88,6 +88,8 @@ import shutil
 REPO_ROOT = Path(__file__).resolve().parent.parent
 def export_osmand_files(*args, **kwargs):
     pass
+def build_atlas_home():
+    return "<html lang='fr'><title>Choisir un atlas</title><a href='/assets/web/france/web/index.html'>Atlas France</a><a href='/assets/web/index.html'>Atlas britannique</a>"
 def prepare_android_assets():
     web_out = REPO_ROOT / "android" / "app" / "src" / "main" / "assets" / "web"
     updated_utc = "2026-01-01T00:00:00Z"
@@ -99,6 +101,9 @@ def prepare_android_assets():
     leaflet_out.mkdir(parents=True, exist_ok=True)
     (web_out / "index.html").write_text("<html>UK atlas</html>", encoding="utf-8")
     export_osmand_files(docs_out, updated_utc=updated_utc, include_obf=False)
+    # MONOLITH_ATLAS_HOME_V1: common atlas chooser, written after the asset reset.
+    (web_out / "atlas-home.html").write_text(build_atlas_home(), encoding="utf-8")
+    shutil.copy2(web_out / "atlas-home.html", web_out / "index.html")
     # MONOLITH_FRANCE_INTEGRATION_V2: module copied after the asset reset.
     france_src = REPO_ROOT / "integrations" / "monolith-france"
     if france_src.is_dir():
@@ -158,6 +163,8 @@ if __name__ == "__main__":
         prep_text = prepare.read_text(encoding="utf-8")
         assert prep_text.count("MONOLITH_FRANCE_INTEGRATION_V2") == 1
         assert "france_out" in prep_text and "leaflet_images" in prep_text
+        assert prep_text.count("MONOLITH_ATLAS_HOME_V1") == 1
+        assert "build_atlas_home" in prep_text
         repo_ignore = ROOT.parents[1] / ".gitignore"
         assert ".monolith-france-backups/" in repo_ignore.read_text(encoding="utf-8")
 
@@ -165,7 +172,11 @@ if __name__ == "__main__":
         invoke(repo, "--force")
         subprocess.run([sys.executable, str(prepare)], check=True)
         assets = repo / "android/app/src/main/assets/web"
-        assert (assets / "index.html").read_text(encoding="utf-8") == "<html>UK atlas</html>"
+        home = (assets / "index.html").read_text(encoding="utf-8")
+        assert "Choisir un atlas" in home
+        assert 'href="/assets/web/france/web/index.html"' in home
+        assert 'href="/assets/web/index.html"' in home
+        assert (assets / "atlas-home.html").read_text(encoding="utf-8") == home
         assert (assets / "france/web/index.html").is_file()
         assert (assets / "france/config/france-config.json").is_file()
         expected_sizes = {
