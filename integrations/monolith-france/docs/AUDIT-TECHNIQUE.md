@@ -65,3 +65,29 @@ Les zones tactiles sont portées à 40 px minimum pour les commandes principales
 - Le pont `addJavascriptInterface` est visible dans tous les frames d'une page WebView selon Android ; les pages actuelles ne contiennent pas d'iframe distante identifiée, mais l'ajout futur de contenu embarqué non fiable devra être interdit ou isolé.
 - Le bouton Retour reste implémenté via la méthode historique `onBackPressed` ; il doit être testé sur versions Android récentes avec navigation prédictive.
 - L'identifiant d'application est resté `uk.megalith.lidar`. L'APK de base et l'APK Debug ont le même applicationId ; la compatibilité de signature n'a pas été démontrée par la seule inspection des archives.
+
+
+## Audit de suivi 1.3.0 — moteur de recherche français
+
+### Défauts observés
+
+- La fonction `searchIgn()` était un stub levant une exception.
+- La requête Overpass fixe ne tenait pas compte du texte saisi.
+- La taxonomie JSON n'était pas utilisée pour produire les requêtes.
+- Les objets OSM étaient réduits à un titre/type et un point, sans identifiant stable ni URL source.
+- Les recherches asynchrones ne comportaient pas de mécanisme d'annulation ni de protection contre les réponses tardives.
+- Le manifeste POI IGN associait à tort le type POI au géocodeur direct.
+
+### Corrections 1.3.0
+
+- Taxonomie OSM déclarative reliée à six catégories de prospection.
+- Construction des requêtes par catégorie, terme saisi et bbox.
+- Prise en charge nodes, ways et relations.
+- Normalisation des résultats et identifiants OSM.
+- Limitation d'emprise, annulation et identité de recherche.
+- Endpoint POI documenté comme autocomplétion ; activation différée jusqu'à validation de GetCapabilities.
+- CI couvrant aussi les fichiers Android et la source UK.
+
+### Limites
+
+Cette recherche interroge les objets déjà cartographiés dans OSM. Elle ne détecte pas de structures inconnues. La présence d'un objet OSM n'atteste pas sa validité archéologique. Les familles de recherche génériques peuvent retourner des résultats ambigus qui exigent un recoupement.
