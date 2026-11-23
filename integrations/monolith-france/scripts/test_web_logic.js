@@ -1,6 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict');
-const {getStorageLimits,isValidObservationFeature,parseObservationImport,isGeoJsonFile,getSearchSettings,buildPlaceSearchUrl}=require('../web/app.js');
+const {getStorageLimits,isValidObservationFeature,parseObservationImport,isGeoJsonFile,getSearchSettings,buildPlaceSearchUrl,normalizeTaxonomy,escapeOverpassValue,queryBoxFromBounds,buildOverpassQuery,osmElementToItem,buildPoiAutocompleteUrl}=require('../web/app.js');
 const point=(lon,lat,properties={title:'test'})=>({type:'Feature',geometry:{type:'Point',coordinates:[lon,lat]},properties});
 
 assert.equal(isValidObservationFeature(point(2.35,48.86)),true,'coordonnées WGS84 valides');
@@ -43,3 +43,32 @@ assert.equal(placeUrl.searchParams.get('terr'),'METROPOLE','recherche bornée à
 const unsafeTerritory=buildPlaceSearchUrl('dolmen',{search:{territory:'*'}});
 assert.equal(unsafeTerritory.searchParams.get('terr'),'METROPOLE','territoire non autorisé refusé');
 console.log('PASS — territoire de géocodage, réglages OSM et limites de recherche.');
+
+const taxonomy=require('../config/archaeology-taxonomy.fr.json');
+const normalTaxonomy=normalizeTaxonomy(taxonomy);
+assert.ok(normalTaxonomy.length>=5,'taxonomie archéologique riche et exploitable');
+assert.ok(normalTaxonomy.some(category=>category.id==='megaliths'),'catégorie mégalithes présente');
+assert.ok(normalTaxonomy.some(category=>category.id==='roman'),'catégorie romaine présente');
+assert.equal(escapeOverpassValue('D"Artagnan\\Site'),'D\\"Artagnan\\\\Site','échappement Overpass');
+const bbox={getSouth:()=>47.1,getWest:()=>0.1,getNorth:()=>47.3,getEast:()=>0.4};
+assert.ok(queryBoxFromBounds(bbox).areaKm2>0,'emprise métrique approximative positive');
+assert.throws(()=>buildOverpassQuery({bounds:{getSouth:()=>91,getWest:()=>0,getNorth:()=>92,getEast:()=>1},category:'megaliths',taxonomy}),/invalide/);
+const osmQuery=buildOverpassQuery({bounds:bbox,category:'megaliths',taxonomy,query:'dolmen'});
+assert.match(osmQuery,/node\["historic"="archaeological_site"\]/,'requête nodes');
+assert.match(osmQuery,/way\["archaeological_site"="megalith"\]/,'requête ways');
+assert.match(osmQuery,/relation\["man_made"="cairn"\]/,'requête relations');
+assert.match(osmQuery,/name~"dolmen"/,'texte utilisateur appliqué à la requête');
+assert.throws(()=>buildOverpassQuery({bounds:{getSouth:()=>40,getWest:()=>-5,getNorth:()=>55,getEast:()=>10},category:'megaliths',taxonomy}),/trop vaste/);
+assert.throws(()=>buildOverpassQuery({bounds:bbox,category:'inconnue',taxonomy}),/inconnue/);
+const osmItem=osmElementToItem({type:'way',id:42,center:{lat:47.2,lon:0.2},tags:{name:'Dolmen test',historic:'archaeological_site',archaeological_site:'megalith',megalith_type:'dolmen'}});
+assert.equal(osmItem.id,'osm:way:42','identifiant stable OSM');
+assert.equal(osmItem.title,'Dolmen test','nom OSM');
+assert.equal(osmItem.kind,'dolmen','sous-type prioritaire');
+assert.equal(osmItem.url,'https://www.openstreetmap.org/way/42','lien source OSM');
+assert.equal(osmElementToItem({type:'relation',id:1,tags:{name:'Sans géométrie'}}),null,'objet sans géométrie écarté');
+const poiUrl=buildPoiAutocompleteUrl('dolmen','pont');
+assert.equal(poiUrl.pathname,'/geocodage/completion/','endpoint POI autocomplete');
+assert.equal(poiUrl.searchParams.get('poiType'),'pont','poiType transmis uniquement depuis un type résolu');
+assert.equal(poiUrl.searchParams.get('terr'),'METROPOLE','périmètre territorial');
+assert.throws(()=>buildPoiAutocompleteUrl('dolmen',''),/GetCapabilities/);
+console.log('PASS — taxonomie, Overpass QL, géométrie OSM, filtre utilisateur et endpoint POI.');
