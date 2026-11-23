@@ -186,8 +186,8 @@ def main() -> int:
         ERRORS.append("Le contrat de construction des requêtes POI IGN est absent.")
     if "IGN / Géoplateforme" not in js or "buildPlaceSearchUrl" not in js:
         ERRORS.append("Le géocodage direct IGN doit rester identifiable.")
-    if "nameFilter" not in js or "buildOverpassQuery" not in js:
-        ERRORS.append("Le filtre textuel et le générateur Overpass sont requis.")
+    if "queryFields" not in js or "buildOverpassQuery" not in js or "escapeOverpassRegex" not in js:
+        ERRORS.append("Les champs textuels configurables et le générateur Overpass sont requis.")
     if "osmElementToItem" not in js or "AbortController" not in js:
         ERRORS.append("La normalisation OSM et l'annulation des recherches sont requises.")
     if "overpass-api.de" not in js:
