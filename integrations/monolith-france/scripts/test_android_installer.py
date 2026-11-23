@@ -178,7 +178,7 @@ if __name__ == "__main__":
         assert 'lang="fr"' in france_home and "Accueil France" in france_home
         assert 'href="/assets/web/france/web/index.html"' in france_home
         assert 'href="/assets/web/uk-home.html"' in france_home
-        assert 'lang="en-GB"' in uk_home and "Explore the UK Atlas" in uk_home
+        assert 'lang="en-GB"' in uk_home and "This is the territory introduction, not the map itself" in uk_home
         assert 'href="/assets/web/index.html"' in uk_home
         assert 'href="/assets/web/france-home.html"' in uk_home
 
