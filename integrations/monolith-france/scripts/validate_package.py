@@ -73,6 +73,8 @@ def main() -> int:
             ERRORS.append("Identifiants de taxonomie dupliqués.")
         if any(not isinstance(c.get("osm"), list) or not c["osm"] for c in categories if isinstance(c, dict)):
             ERRORS.append("Chaque famille de recherche doit documenter ses règles OSM.")
+        if any(not isinstance(c.get("queryFields"), list) or not c["queryFields"] for c in categories if isinstance(c, dict)):
+            ERRORS.append("Chaque famille doit définir ses champs de recherche textuelle.")
 
     source_text = json.dumps(sources, ensure_ascii=False)
     for layer in ("IGNF_LIDAR-HD_MNT", "IGNF_LIDAR-HD_MNS", "IGNF_LIDAR-HD_MNH"):
@@ -196,6 +198,10 @@ def main() -> int:
     for search_contract in ("escapeOverpassRegex", "buildOverpassTagSelector"):
         if search_contract not in js:
             ERRORS.append(f"Contrat de sécurité des requêtes absent : {search_contract}")
+    if "deduplicateOsmItems" not in js:
+        ERRORS.append("La déduplication des résultats OSM est absente.")
+    if "queryFields" not in js:
+        ERRORS.append("Les champs de recherche par sous-type ne sont pas utilisés.")
     if "tags" not in taxonomy.get("categories", [{}])[0].get("osm", [{}])[0]:
         ERRORS.append("La taxonomie doit pouvoir exprimer des conjonctions de tags OSM.")
     if "geocodage/completion/" not in source_text:
