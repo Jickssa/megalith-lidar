@@ -91,3 +91,12 @@ Les zones tactiles sont portées à 40 px minimum pour les commandes principales
 ### Limites
 
 Cette recherche interroge les objets déjà cartographiés dans OSM. Elle ne détecte pas de structures inconnues. La présence d'un objet OSM n'atteste pas sa validité archéologique. Les familles de recherche génériques peuvent retourner des résultats ambigus qui exigent un recoupement.
+
+
+## Audit 1.3.1 — précision du moteur OSM
+
+Les tags OSM ont été vérifiés dans la documentation actuelle. Pour les mégalithes, la combinaison recommandée est `historic=archaeological_site` avec `archaeological_site=megalith`, et le sous-type peut être précisé par `megalith_type=*`. Les villas romaines et fortifications archéologiques s'expriment également par `historic=archaeological_site` et `archaeological_site=roman_villa` / `fortification`. Les valeurs génériques ne doivent pas être prises comme preuves archéologiques.
+
+La recherche texte interroge maintenant des champs configurés par catégorie (nom, nom français, référence, sous-type) et déduplique les mêmes objets. Les tags trop génériques ou documentés comme confondeurs ont été retirés des recherches automatiques.
+
+Limite : les catégories « patrimoine médiéval » comportent volontairement des objets bâtis visibles, pas uniquement des sites archéologiques enfouis. L'interface doit conserver cette distinction dans les fiches et filtres.
