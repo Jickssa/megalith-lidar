@@ -185,8 +185,7 @@ if __name__ == "__main__":
         real_prepare = real_repo / "scripts/prepare_android_assets.py"
         upstream_prepare = ROOT.parents[1] / "scripts/prepare_android_assets.py"
         shutil.copy2(upstream_prepare, real_prepare)
-        real_installer = real_repo / "integrations/monolith-france/scripts/install_into_megalith_lidar_android.py"
-        subprocess.run([sys.executable, str(real_installer), str(real_repo), "--force"], check=True)
+        subprocess.run([sys.executable, str(INSTALLER), str(real_repo), "--force"], check=True)
         real_text = real_prepare.read_text(encoding="utf-8")
         import ast
         ast.parse(real_text)
