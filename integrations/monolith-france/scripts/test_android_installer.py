@@ -1,0 +1,251 @@
+#!/usr/bin/env python3
+"""Regression test for Monolith France Android installer."""
+from __future__ import annotations
+
+import shutil
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+INSTALLER = ROOT / "scripts/install_into_megalith_lidar_android.py"
+IMAGE_NAMES = (
+    "layers.png",
+    "layers-2x.png",
+    "marker-icon.png",
+    "marker-icon-2x.png",
+    "marker-shadow.png",
+)
+
+
+def write(path: Path, content: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content, encoding="utf-8")
+
+
+def invoke(repo: Path, *args: str) -> str:
+    proc = subprocess.run(
+        [sys.executable, str(INSTALLER), str(repo), *args],
+        capture_output=True,
+        text=True,
+    )
+    if proc.returncode:
+        raise AssertionError(proc.stdout + proc.stderr)
+    return proc.stdout
+
+
+def main() -> int:
+    with tempfile.TemporaryDirectory(prefix="monolith-france-installer-") as tmp:
+        repo = Path(tmp) / "megalith-lidar"
+        activity = repo / "android/app/src/main/java/uk/megalith/lidar/MainActivity.kt"
+        manifest = repo / "android/app/src/main/AndroidManifest.xml"
+        leaflet = repo / "android/app/src/main/leaflet"
+        prepare = repo / "scripts/prepare_android_assets.py"
+        gradle = repo / "android/app/build.gradle.kts"
+        strings = repo / "android/app/src/main/res/values/strings.xml"
+        web_out = repo / "android/app/src/main/assets/web"
+
+        write(activity, '''package uk.megalith.lidar
+class MainActivity {
+    fun saveOrShareFile(filename: String, mimeType: String, content: String) {}
+    private var fileUploadCallback: ValueCallback<Array<Uri>>? = null
+    fun onShowFileChooser() {
+        object {
+            fun choose() {
+                try {
+                    startActivityForResult(Intent.createChooser(Intent(), "Choose"), 1002)
+                    true
+                } catch (_: ActivityNotFoundException) {
+                    fileUploadCallback = null
+                    false
+                }
+            }
+        }
+    }
+    fun setup() {
+        val assetLoader = WebViewAssetLoader.Builder()
+            .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(this))
+            .build()
+        setGeolocationEnabled(true)
+        webView.addJavascriptInterface(AndroidBridge(), "MegalithAndroid")
+    }
+    companion object {
+        private const val START_URL =
+            "https://appassets.androidplatform.net/assets/web/index.html"
+    }
+}
+''')
+        write(manifest, '''<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<uses-permission android:name="android.permission.INTERNET"/>
+<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+</manifest>''')
+        write(leaflet / "leaflet.js", "/* Leaflet 1.9.4 */\n")
+        write(leaflet / "leaflet.css", "/* Leaflet CSS */\n")
+        prepare_source = '''from pathlib import Path
+import shutil
+REPO_ROOT = Path(__file__).resolve().parent.parent
+def export_osmand_files(*args, **kwargs):
+    pass
+def prepare_android_assets():
+    web_out = REPO_ROOT / "android" / "app" / "src" / "main" / "assets" / "web"
+    updated_utc = "2026-01-01T00:00:00Z"
+    docs_out = web_out / "docs"
+    leaflet_out = web_out / "leaflet"
+    if web_out.exists():
+        shutil.rmtree(web_out)
+    docs_out.mkdir(parents=True, exist_ok=True)
+    leaflet_out.mkdir(parents=True, exist_ok=True)
+    (web_out / "index.html").write_text(
+        """<html><body><header>
+      <a class="btn-link" href="https://github.com/GlassOnTin/megalith-lidar" target="_blank" rel="noopener" title="Source code, model checkpoints, and documentation (AGPL-3.0)">
+        GitHub ↗
+      </a>
+      </header><main id="uk-atlas">UK atlas</main></body></html>""",
+        encoding="utf-8",
+    )
+    export_osmand_files(docs_out, updated_utc=updated_utc, include_obf=False)
+if __name__ == "__main__":
+    prepare_android_assets()
+'''
+        write(prepare, prepare_source)
+        write(gradle, '''val prepareWebAssets by tasks.registering(Exec::class) {
+    val rootRepoDir = rootProject.projectDir.parentFile
+    inputs.file(File(rootRepoDir, "scripts/prepare_android_assets.py"))
+    inputs.file(File(rootRepoDir, "scripts/export_osmand_plugin.py"))
+    outputs.dir(file("src/main/assets/web"))
+}
+''')
+        write(strings, '<resources><string name="app_name">Megalith LiDAR</string></resources>\n')
+
+        # Real image files are read from the checked-in package and must decode.
+        dry = invoke(repo, "--dry-run")
+        assert "DRY-RUN OK" in dry
+        assert not (repo / "integrations/monolith-france").exists()
+
+        invoke(repo)
+        # Test --force with source == destination in a separate self-hosted fixture.
+        self_host = Path(tmp) / "self-hosted"
+        shutil.copytree(repo, self_host)
+        self_integration = self_host / "integrations/monolith-france"
+        if self_integration.exists():
+            shutil.rmtree(self_integration)
+        shutil.copytree(ROOT, self_integration)
+        self_installer = self_integration / "scripts/install_into_megalith_lidar_android.py"
+        subprocess.run([sys.executable, str(self_installer), str(self_host), "--force"], check=True)
+        for preserved in ("scripts/install_into_megalith_lidar_android.py", "README-INTEGRATION-FR.md", ".gitignore", "web/index.html"):
+            assert (self_integration / preserved).is_file(), preserved
+        assert not list((self_host / "android/app/src/main/res").rglob("*.bak"))
+        self_hook = (self_host / "scripts/prepare_android_assets.py").read_text(encoding="utf-8")
+        assert self_hook.count("MONOLITH_FRANCE_INTEGRATION_V2") == 1
+        assert "france-home.html" in self_hook and "uk-home.html" in self_hook
+        patched_activity = activity.read_text(encoding="utf-8")
+        assert "/assets/web/atlas-home.html" in patched_activity
+        actual_activity = (ROOT.parents[1] / "android/app/src/main/java/uk/megalith/lidar/MainActivity.kt").read_text(encoding="utf-8")
+        assert "MAX_EXPORT_BYTES" in actual_activity
+        assert "File.createTempFile" in actual_activity
+        assert "fileChooserParams.acceptTypes" in actual_activity
+        assert "uri.userInfo == null" in actual_activity
+        for native_contract in (
+            "MAX_DIAGNOSTIC_FILE_BYTES",
+            "MAX_DIAGNOSTIC_CACHE_BYTES",
+            "MAX_DIAGNOSTIC_CACHE_FILES",
+            "instanceFollowRedirects = false",
+            "isValidDiagnosticPng",
+            "trimDiagnosticCache",
+        ):
+            assert native_contract in actual_activity, native_contract
+        assert "fileUploadCallback?.onReceiveValue(null)\n                    fileUploadCallback = null" in patched_activity
+        assert "Megalith LiDAR France" in strings.read_text(encoding="utf-8")
+        backup_root = repo / ".monolith-france-backups"
+        assert (backup_root / "android/app/src/main/java/uk/megalith/lidar/MainActivity.kt").is_file()
+        assert (backup_root / "android/app/src/main/res/values/strings.xml").is_file()
+        assert not list((repo / "android/app/src/main/res").rglob("*.bak"))
+        assert "integrations/monolith-france" in gradle.read_text(encoding="utf-8")
+        prep_text = prepare.read_text(encoding="utf-8")
+        assert prep_text.count("MONOLITH_FRANCE_INTEGRATION_V2") == 1
+        assert "france_out" in prep_text and "leaflet_images" in prep_text
+        assert prep_text.count("MONOLITH_ATLAS_HOME_V1") == 1
+        assert "build_atlas_home" in prep_text
+        repo_ignore = ROOT.parents[1] / ".gitignore"
+        assert ".monolith-france-backups/" in repo_ignore.read_text(encoding="utf-8")
+
+        # Execute the same source preparation logic after the installer has patched it.
+        invoke(repo, "--force")
+        subprocess.run([sys.executable, str(prepare)], check=True)
+        assets = repo / "android/app/src/main/assets/web"
+        home = (assets / "atlas-home.html").read_text(encoding="utf-8")
+        assert "Choisir un atlas" in home
+        assert 'href="/assets/web/france/web/index.html"' in home
+        assert 'href="/assets/web/index.html"' in home
+        assert "Atlas UK" in home and "Ouvrir l’Atlas UK" in home
+        assert "/assets/web/france-home.html" not in home
+        assert "/assets/web/uk-home.html" not in home
+
+        france_home = (assets / "france-home.html").read_text(encoding="utf-8")
+        uk_home = (assets / "uk-home.html").read_text(encoding="utf-8")
+        assert 'lang="fr"' in france_home and "Accueil France" in france_home
+        assert 'href="/assets/web/france/web/index.html"' in france_home
+        assert 'href="/assets/web/uk-home.html"' in france_home
+        assert 'lang="fr"' in uk_home and "Cette page présente le territoire" in uk_home
+        assert 'href="/assets/web/index.html"' in uk_home
+        assert 'href="/assets/web/france-home.html"' in uk_home
+
+        uk_html = (assets / "index.html").read_text(encoding="utf-8")
+        assert 'id="uk-atlas"' in uk_html and "UK atlas" in uk_html
+        assert uk_html.count('data-monolith-atlas-home="true"') == 1
+        assert 'href="/assets/web/atlas-home.html"' in uk_html
+        assert 'data-monolith-france-atlas="true"' in uk_html
+        assert 'href="/assets/web/france/web/index.html"' in uk_html
+        assert 'href="/assets/web/index.html" data-monolith-uk-atlas="true"' not in uk_html
+
+        france_html = (assets / "france/web/index.html").read_text(encoding="utf-8")
+        assert 'href="/assets/web/france-home.html"' in france_html
+        assert "/assets/web/atlas-home.html" in france_html
+        assert 'href="/assets/web/index.html"' in france_html
+        assert (assets / "france/web/index.html").is_file()
+        assert (assets / "france/config/france-config.json").is_file()
+        expected_sizes = {
+            "layers.png": (26, 26),
+            "layers-2x.png": (52, 52),
+            "marker-icon.png": (25, 41),
+            "marker-icon-2x.png": (50, 82),
+            "marker-shadow.png": (41, 41),
+        }
+        from PIL import Image
+        for name, expected_size in expected_sizes.items():
+            target = assets / "leaflet/images" / name
+            assert target.is_file(), name
+            with Image.open(target) as image:
+                assert image.size == expected_size, (name, image.size, expected_size)
+                image.load()
+                assert image.convert("RGBA").getchannel("A").getbbox() is not None, name
+        assert prep_text.count("MONOLITH_FRANCE_INTEGRATION_V2") == 1
+        # Exercise the installer against a copy of the real upstream asset preparer.
+        real_repo = Path(tmp) / "real-upstream-fixture"
+        shutil.copytree(repo, real_repo)
+        real_prepare = real_repo / "scripts/prepare_android_assets.py"
+        upstream_index = ROOT.parents[1] / "index.html"
+        real_index = real_repo / "index.html"
+        shutil.copy2(upstream_index, real_index)
+        import hashlib
+        uk_source_sha_before = hashlib.sha256(real_index.read_bytes()).hexdigest()
+        upstream_prepare = ROOT.parents[1] / "scripts/prepare_android_assets.py"
+        shutil.copy2(upstream_prepare, real_prepare)
+        subprocess.run([sys.executable, str(INSTALLER), str(real_repo), "--force"], check=True)
+        real_text = real_prepare.read_text(encoding="utf-8")
+        import ast
+        ast.parse(real_text)
+        assert real_text.count("MONOLITH_ATLAS_HOME_V1") == 1
+        assert real_text.count("export_osmand_files(docs_out, updated_utc=updated_utc, include_obf=False)") == 1
+        assert "def build_atlas_home():" in real_text
+        assert "atlas-home.html" in real_text
+        assert "france-home.html" in real_text and "uk-home.html" in real_text
+        assert hashlib.sha256(real_index.read_bytes()).hexdigest() == uk_source_sha_before
+        print("PASS — dry-run, backups, three-level navigation, immutable UK source, re-install, fixture and real-upstream hook.")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -1,0 +1,4 @@
+# Cache locale du paquet
+__pycache__/
+*.py[cod]
+.DS_Store

@@ -1,0 +1,45 @@
+'use strict';
+const assert=require('node:assert/strict');
+const {getStorageLimits,isValidObservationFeature,parseObservationImport,isGeoJsonFile,getSearchSettings,buildPlaceSearchUrl}=require('../web/app.js');
+const point=(lon,lat,properties={title:'test'})=>({type:'Feature',geometry:{type:'Point',coordinates:[lon,lat]},properties});
+
+assert.equal(isValidObservationFeature(point(2.35,48.86)),true,'coordonnées WGS84 valides');
+assert.equal(isValidObservationFeature(point(181,48.86)),false,'longitude hors plage');
+assert.equal(isValidObservationFeature(point(2.35,91)),false,'latitude hors plage');
+assert.equal(isValidObservationFeature(point('2.35',48.86)),false,'coordonnée chaîne refusée');
+assert.equal(isValidObservationFeature({...point(2.35,48.86),geometry:{type:'LineString',coordinates:[[2,48],[3,49]]}}),false,'géométrie non ponctuelle refusée');
+assert.equal(isValidObservationFeature(point(2.35,48.86,[])),false,'propriétés tableau refusées');
+assert.equal(isValidObservationFeature(point(2.35,48.86,null)),true,'properties:null autorisé');
+
+const limits={maxImportBytes:1024,maxFeatures:3};
+const batch={type:'FeatureCollection',features:[point(2.35,48.86),point(3.1,49.2),point(181,48)]};
+const parsed=parseObservationImport(batch,512,2,limits);
+assert.equal(parsed.features.length,1,'respecte le plafond cumulé');
+assert.equal(parsed.invalid,1,'compte les entités invalides');
+assert.equal(parsed.skipped,1,'compte les entités au-delà du plafond');
+assert.throws(()=>parseObservationImport(batch,2048,0,limits),/trop volumineux/);
+assert.throws(()=>parseObservationImport({type:'Feature',geometry:{}},10,0,limits),/FeatureCollection/);
+assert.throws(()=>parseObservationImport({type:'FeatureCollection',features:[1,2,3,4]},10,0,limits),/dépasse/);
+assert.deepEqual(getStorageLimits({storage:{maxImportBytes:1234,maxFeatures:42}}),{maxImportBytes:1234,maxFeatures:42});
+assert.deepEqual(getStorageLimits({storage:{maxImportBytes:-1,maxFeatures:'40'}}),{maxImportBytes:20*1024*1024,maxFeatures:5000});
+assert.equal(isGeoJsonFile({name:'terrain.geojson',type:''}),true,'geojson extension accepted with empty provider MIME');
+assert.equal(isGeoJsonFile({name:'notes.json',type:'application/json'}),true,'JSON MIME accepted');
+assert.equal(isGeoJsonFile({name:'payload.bin',type:'application/geo+json'}),true,'GeoJSON MIME accepted without extension');
+assert.equal(isGeoJsonFile({name:'payload.bin',type:'application/octet-stream'}),false,'generic binary rejected');
+assert.equal(isGeoJsonFile({name:'page.html',type:'text/html'}),false,'HTML rejected');
+assert.equal(isGeoJsonFile({name:'archive.zip',type:'application/zip'}),false,'archive rejected');
+console.log('PASS — GeoJSON validation, WGS84 ranges, MIME/extension filter, size limits and configuration fallbacks.');
+
+const searchSettings=getSearchSettings({search:{maxResults:250,osmMinimumZoom:9,territory:'METROPOLE'}});
+assert.deepEqual(searchSettings,{maxResults:30,osmMinimumZoom:9,territory:'METROPOLE'},'plafond de résultats et territoire métropolitain');
+const fallbackSearch=getSearchSettings({search:{maxResults:-2,osmMinimumZoom:30,territory:'UNKNOWN'}});
+assert.deepEqual(fallbackSearch,{maxResults:30,osmMinimumZoom:19,territory:'METROPOLE'},'valeurs de recherche invalides ramenées aux valeurs sûres');
+const placeUrl=buildPlaceSearchUrl('  dolmen  ',{search:{maxResults:12,osmMinimumZoom:8,territory:'METROPOLE'}});
+assert.equal(placeUrl.origin,'https://data.geopf.fr','endpoint officiel Géoplateforme');
+assert.equal(placeUrl.pathname,'/geocodage/search','route de géocodage direct');
+assert.equal(placeUrl.searchParams.get('q'),'dolmen','requête nettoyée');
+assert.equal(placeUrl.searchParams.get('limit'),'12','limite de résultats issue de la configuration');
+assert.equal(placeUrl.searchParams.get('terr'),'METROPOLE','recherche bornée à la France métropolitaine');
+const unsafeTerritory=buildPlaceSearchUrl('dolmen',{search:{territory:'*'}});
+assert.equal(unsafeTerritory.searchParams.get('terr'),'METROPOLE','territoire non autorisé refusé');
+console.log('PASS — territoire de géocodage, réglages OSM et limites de recherche.');
