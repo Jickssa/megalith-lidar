@@ -23,9 +23,10 @@ function normalizeTaxonomy(taxonomy){
   id:category.id,
   label:String(category.label||category.id),
   terms:Array.isArray(category.terms)?category.terms.map(String):[],
+  queryFields:(Array.isArray(category.queryFields)?category.queryFields:['name','name:fr','ref']).filter(key=>typeof key==='string'&&/^[A-Za-z0-9_:]+$/.test(key)),
   osm:category.osm.map(rule=>{
    if(rule&&rule.tags&&typeof rule.tags==='object'&&!Array.isArray(rule.tags)){
-    const tags=Object.entries(rule.tags).filter(([key,value])=>typeof key==='string'&&typeof value==='string'&&key&&value);
+    const tags=Object.entries(rule.tags).filter(([key,value])=>typeof key==='string'&&typeof value==='string'&&/^[A-Za-z0-9_:]+$/.test(key)&&value);
     return tags.length?{tags:Object.fromEntries(tags)}:null;
    }
    return rule&&typeof rule.key==='string'&&typeof rule.value==='string'?{tags:{[rule.key]:rule.value}}:null;
@@ -83,10 +84,11 @@ function buildOverpassQuery({bounds,category,taxonomy,query,limit=1200}){
  if(!selected)throw Error('Catégorie archéologique inconnue : '+category);
  const bbox=[box.south,box.west,box.north,box.east].join(',');
  const text=String(query||'').trim();
- const nameFilter=text?'[name~"'+escapeOverpassValue(escapeOverpassRegex(text))+'",i]':'';
+ const safeText=text?escapeOverpassValue(escapeOverpassRegex(text)):'';
+ const textFilters=text?selected.queryFields.map(key=>'['+key+'~"'+safeText+'",i]'):[''];
  const queryClauses=selected.osm.map(rule=>{
   const selector=buildOverpassTagSelector(rule.tags);
-  return ['node','way','relation'].map(type=>type+selector+nameFilter+'('+bbox+');').join('');
+  return textFilters.map(filter=>['node','way','relation'].map(type=>type+selector+filter+'('+bbox+');').join('')).join('');
  }).join('');
  const safeLimit=Math.max(1,Math.min(Number.isSafeInteger(limit)?limit:1200,2000));
  return '[out:json][timeout:25];('+queryClauses+');out center tags '+safeLimit+';';
@@ -106,6 +108,15 @@ function osmElementToItem(feature,source='OpenStreetMap'){
  return {id:feature.id!=null?'osm:'+feature.type+':'+feature.id:undefined,title,kind:type,source,lat,lon,tags,osmType:feature.type,osmId:feature.id,url:feature.id?'https://www.openstreetmap.org/'+feature.type+'/'+feature.id:undefined};
 }
 async function searchPlace(q){const u=buildPlaceSearchUrl(q);const r=await getJson(u);return (r.features||r.results||[]).map(f=>item(f,'IGN / Géoplateforme'))}
+function deduplicateOsmItems(items){
+ const seen=new Set(),result=[];
+ for(const item of items){
+  const key=item.id||[item.title,item.lat.toFixed(6),item.lon.toFixed(6)].join('|');
+  if(seen.has(key))continue;
+  seen.add(key);result.push(item);
+ }
+ return result;
+}
 async function searchOsm(category,query,signal){
  if(!S.map)throw Error('Carte non initialisée.');
  const settings=getSearchSettings();
@@ -119,7 +130,7 @@ async function searchOsm(category,query,signal){
    if(!response.ok)throw Error('Overpass HTTP '+response.status);
    const payload=await response.json();
    if(!Array.isArray(payload.elements))throw Error('Réponse Overpass invalide : tableau elements absent.');
-   return payload.elements.map(feature=>osmElementToItem(feature)).filter(Boolean);
+   return deduplicateOsmItems(payload.elements.map(feature=>osmElementToItem(feature)).filter(Boolean));
   }catch(error){if(signal?.aborted)throw error;last=error}
  }
  throw last||Error('Overpass indisponible.');
@@ -215,6 +226,6 @@ async function importObs(f){
 }
 function events(){$('searchButton').addEventListener('click',search);$('searchInput').addEventListener('keydown',e=>{if(e.key==='Enter')search()});$('basemapSelect').addEventListener('change',e=>{Object.values(S.base).forEach(l=>S.map.removeLayer(l));S.base[e.target.value].addTo(S.map)});[['layerMnt','mnt'],['layerMns','mns'],['layerMnh','mnh']].forEach(([id,k])=>$(id).addEventListener('change',e=>e.target.checked?S.over[k].addTo(S.map):S.map.removeLayer(S.over[k])));$('locateButton').addEventListener('click',()=>{if(!navigator.geolocation)return toast('Géolocalisation indisponible');navigator.geolocation.getCurrentPosition(p=>S.map.setView([p.coords.latitude,p.coords.longitude],15),e=>toast('Position indisponible : '+e.message),{timeout:10000})});$('addObservation').addEventListener('click',addObs);$('exportObservations').addEventListener('click',exportObs);$('importGeoJson').addEventListener('change',e=>importObs(e.target.files?.[0]));$('cancelDialog').addEventListener('click',()=>$('observationDialog').close());$('observationForm').addEventListener('submit',e=>{e.preventDefault();saveObs()})}
 async function init(){try{[S.cfg,S.taxonomy]=await Promise.all([getJson(CFG),getJson('/assets/web/france/config/archaeology-taxonomy.fr.json')]);S.sources=await getJson(SRC);initMap();events();loadObs();$('mapStatus').textContent='Module prêt — requêtes à la demande'}catch(e){$('mapStatus').textContent='Initialisation impossible : '+e.message;toast('Erreur au démarrage du module France.')}}
-if(typeof module!=='undefined'&&module.exports)module.exports={getStorageLimits,isValidObservationFeature,parseObservationImport,isGeoJsonFile,getSearchSettings,buildPlaceSearchUrl,normalizeTaxonomy,escapeOverpassValue,escapeOverpassRegex,buildOverpassTagSelector,queryBoxFromBounds,buildOverpassQuery,osmElementToItem,buildPoiAutocompleteUrl};
+if(typeof module!=='undefined'&&module.exports)module.exports={getStorageLimits,isValidObservationFeature,parseObservationImport,isGeoJsonFile,getSearchSettings,buildPlaceSearchUrl,normalizeTaxonomy,escapeOverpassValue,escapeOverpassRegex,buildOverpassTagSelector,queryBoxFromBounds,buildOverpassQuery,osmElementToItem,deduplicateOsmItems,buildPoiAutocompleteUrl};
 if(typeof document!=='undefined')document.addEventListener('DOMContentLoaded',init);
 })();
