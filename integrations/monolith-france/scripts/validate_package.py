@@ -178,10 +178,16 @@ def main() -> int:
         ERRORS.append("Le mode POI mégalithe IGN non validé ne doit pas être exposé dans l’interface.")
     if "Mégalithes IGN" in html:
         ERRORS.append("L’interface ne doit pas présenter la recherche POI mégalithe comme disponible.")
-    if "Recherche du sous-type POI" not in js:
-        ERRORS.append("Le mode POI mégalithe doit rester explicitement déclaré désactivé.")
-    if "IGN — géocodage" not in js:
-        ERRORS.append("Le chemin de recherche de géocodage IGN doit rester identifiable.")
+    if "geocodage/completion/" not in source_text:
+        ERRORS.append("L'endpoint d'autocomplétion POI IGN doit être déclaré distinctement.")
+    if "buildPoiAutocompleteUrl" not in js or "poiType" not in js:
+        ERRORS.append("Le contrat de construction des requêtes POI IGN est absent.")
+    if "IGN / Géoplateforme" not in js or "buildPlaceSearchUrl" not in js:
+        ERRORS.append("Le géocodage direct IGN doit rester identifiable.")
+    if "nameFilter" not in js or "buildOverpassQuery" not in js:
+        ERRORS.append("Le filtre textuel et le générateur Overpass sont requis.")
+    if "osmElementToItem" not in js or "AbortController" not in js:
+        ERRORS.append("La normalisation OSM et l'annulation des recherches sont requises.")
     if "overpass-api.de" not in js:
         ERRORS.append("Endpoint Overpass primaire absent.")
     for search_contract in ("buildOverpassQuery", "normalizeTaxonomy", "osmElementToItem", "archaeologyCategory", "AbortController"):
