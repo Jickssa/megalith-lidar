@@ -1,10 +1,10 @@
 # Monolith France — module cartographique LiDAR & archéologie
 
-**Version du paquet :** 1.2.4  
+**Version du paquet :** 1.3.0  
 **Langue / territoire initial :** français / France métropolitaine  
 **Cible :** intégration dans une APK Android hôte nommée « Monolith » via `WebViewAssetLoader`.
 
-Ce module fournit une interface cartographique mobile, des couches IGN LiDAR HD, le géocodage de lieux/adresses par la Géoplateforme, la recherche OSM à l'échelle de l'emprise courante et un carnet de prospection local importable/exportable en GeoJSON. La recherche dédiée au sous-type POI « mégalithe » de l'IGN est actuellement désactivée : son schéma de catégorie et de filtrage n'est pas encore validé.
+Ce module fournit une interface cartographique mobile, des couches IGN LiDAR HD, le géocodage de lieux/adresses par la Géoplateforme, la recherche OSM à l'échelle de l'emprise courante et un carnet de prospection local importable/exportable en GeoJSON. La recherche OSM s'appuie sur une taxonomie française de six familles et des requêtes paramétrées par le terme et l'emprise. La recherche POI IGN utilise le service d'autocomplétion distinct ; elle reste non activée tant que le type issu de GetCapabilities et son comportement réel ne sont pas validés.
 
 ## Contenu
 - `web/` : interface, carte Leaflet, recherche IGN / OSM et carnet de terrain.
