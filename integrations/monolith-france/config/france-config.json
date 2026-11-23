@@ -17,7 +17,9 @@
     "defaultMode": "place",
     "maxResults": 30,
     "osmMinimumZoom": 8,
-    "territory": "METROPOLE"
+    "territory": "METROPOLE",
+    "maxSearchAreaKm2": 2500,
+    "overpassResultLimit": 1200
   },
   "detector": {
     "enabled": false,
