@@ -97,8 +97,11 @@ def main() -> int:
         for ref in refs:
             if ref.startswith(("https://", "http://", "data:", "#", "/assets/web/leaflet/")):
                 continue
-            if ref == "/assets/web/index.html":
-                # Deliberate link to the upstream UK atlas in the host APK.
+            if ref in (
+                "/assets/web/index.html",
+                "/assets/web/atlas-home.html",
+            ):
+                # Deliberate shared entry routes in the host APK.
                 continue
             if ref.startswith("/assets/web/france/"):
                 relative = ref.removeprefix("/assets/web/france/")

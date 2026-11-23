@@ -90,6 +90,7 @@ def export_osmand_files(*args, **kwargs):
     pass
 def build_atlas_home():
     return "<html lang='fr'><title>Choisir un atlas</title><a href='/assets/web/france/web/index.html'>Atlas France</a><a href='/assets/web/index.html'>Atlas britannique</a>"
+
 def prepare_android_assets():
     web_out = REPO_ROOT / "android" / "app" / "src" / "main" / "assets" / "web"
     updated_utc = "2026-01-01T00:00:00Z"
