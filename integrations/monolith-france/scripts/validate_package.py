@@ -193,6 +193,11 @@ def main() -> int:
     for search_contract in ("buildOverpassQuery", "normalizeTaxonomy", "osmElementToItem", "archaeologyCategory", "AbortController"):
         if search_contract not in js and search_contract not in html:
             ERRORS.append(f"Contrat du moteur de recherche absent : {search_contract}")
+    for search_contract in ("escapeOverpassRegex", "buildOverpassTagSelector"):
+        if search_contract not in js:
+            ERRORS.append(f"Contrat de sécurité des requêtes absent : {search_contract}")
+    if "tags" not in taxonomy.get("categories", [{}])[0].get("osm", [{}])[0]:
+        ERRORS.append("La taxonomie doit pouvoir exprimer des conjonctions de tags OSM.")
     if "geocodage/completion/" not in source_text:
         ERRORS.append("L'endpoint d'autocomplétion POI IGN doit être distinct du géocodeur direct.")
     if "saveOrShareFile" not in js:
