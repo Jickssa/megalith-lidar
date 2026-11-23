@@ -11,6 +11,7 @@ on:
   push:
     branches:
       - "feature/monolith-france-1.1.0"
+      - "feature/monolith-international-next"
     paths:
       - "integrations/monolith-france/**"
       - "android/**"
