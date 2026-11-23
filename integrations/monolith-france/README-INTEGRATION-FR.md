@@ -1,6 +1,6 @@
 # Monolith France — module cartographique LiDAR & archéologie
 
-**Version du paquet :** 1.2.0  
+**Version du paquet :** 1.2.3  
 **Langue / territoire initial :** français / France métropolitaine  
 **Cible :** intégration dans une APK Android hôte nommée « Monolith » via `WebViewAssetLoader`.
 
@@ -40,7 +40,7 @@ Elle prépare les ressources, exécute les contrôles, lance `assembleDebug`, pu
 
 ## Navigation entre atlas — architecture à trois niveaux
 
-Le démarrage Android ouvre le sélecteur commun `/assets/web/atlas-home.html`. Ses deux cartes ouvrent directement les véritables interfaces cartographiques : France (`/assets/web/france/web/index.html`) et Royaume-Uni (`/assets/web/index.html`). Les pages `france-home.html` et `uk-home.html` sont des introductions territoriales secondaires ; chacune dispose d'un bouton d'action qui ouvre l'Atlas correspondant. Les pages territoriales permettent de revenir au sélecteur et de basculer vers l'autre territoire. L'Atlas France propose également les liens « Accueil France », « Accueil des atlas » et un accès direct à « Atlas britannique ». Dans l'Atlas britannique, le préparateur ajoute un seul lien « Choose atlas » à l'en-tête de la copie embarquée ; le fichier source racine `index.html` reste inchangé. Les deux pages territoriales sont générées par l'installateur après la reconstruction des assets : elles ne sont pas des copies des interfaces cartographiques.
+Le démarrage Android ouvre le sélecteur commun `/assets/web/atlas-home.html`. Ses deux cartes ouvrent directement les véritables interfaces cartographiques : France (`/assets/web/france/web/index.html`) et Royaume-Uni (`/assets/web/index.html`). Les pages `france-home.html` et `uk-home.html` sont des introductions territoriales secondaires ; chacune dispose d'un bouton d'action qui ouvre l'Atlas correspondant. Les pages territoriales permettent de revenir au sélecteur et de basculer vers l'autre territoire. L'Atlas France propose également les liens « Accueil France », « Accueil des atlas » et un accès direct à « Atlas britannique ». Dans l'Atlas britannique, le préparateur ajoute les liens « Choose atlas » et « France Atlas » à l'en-tête de la copie embarquée ; aucun lien ne recharge inutilement la page UK. Le fichier source racine `index.html` reste inchangé. L'introduction territoriale UK est en français ; la carte britannique historique reste en anglais. Les deux pages territoriales sont générées par l'installateur après la reconstruction des assets : elles ne sont pas des copies des interfaces cartographiques.
 
 ## Fonctions
 1. France métropolitaine, locale `fr-FR`, coordonnées WGS84.
