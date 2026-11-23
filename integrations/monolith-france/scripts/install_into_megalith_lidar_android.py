@@ -17,12 +17,15 @@ IMAGE_NAMES = (
     "marker-icon-2x.png",
     "marker-shadow.png",
 )
-START_URL = "https://appassets.androidplatform.net/assets/web/france/web/index.html"
-OLD_START_URL = "https://appassets.androidplatform.net/assets/web/index.html"
+START_URL = "https://appassets.androidplatform.net/assets/web/atlas-home.html"
+OLD_START_URLS = (
+    "https://appassets.androidplatform.net/assets/web/index.html",
+    "https://appassets.androidplatform.net/assets/web/france/web/index.html",
+)
 START_URL_PATTERN = re.compile(
-    r'(private\s+const\s+val\s+START_URL\s*=\s*)(["\'])'
-    + re.escape(OLD_START_URL)
-    + r'\2'
+    r'(private\s+const\s+val\s+START_URL\s*=\s*)(["\'])('
+    + "|".join(re.escape(url) for url in OLD_START_URLS)
+    + r')\2'
 )
 
 
@@ -189,9 +192,8 @@ def main() -> int:
                            "marker-icon-2x.png", "marker-shadow.png"):
             shutil.copy2(france_src / "web" / "vendor" / "images" / image_name,
                          leaflet_images / image_name)
-        # MONOLITH_ATLAS_HOME_V1: root screen routes to the two independent atlases.
+        # MONOLITH_ATLAS_HOME_V1: keep the UK index untouched; use a separate entry page.
         (web_out / "atlas-home.html").write_text(build_atlas_home(), encoding="utf-8")
-        shutil.copy2(web_out / "atlas-home.html", web_out / "index.html")
 '''
     if hook_marker not in prepare_text:
         anchor = "    export_osmand_files(docs_out, updated_utc=updated_utc, include_obf=False)\\n"

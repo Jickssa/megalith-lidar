@@ -101,9 +101,8 @@ def prepare_android_assets():
     leaflet_out.mkdir(parents=True, exist_ok=True)
     (web_out / "index.html").write_text("<html>UK atlas</html>", encoding="utf-8")
     export_osmand_files(docs_out, updated_utc=updated_utc, include_obf=False)
-    # MONOLITH_ATLAS_HOME_V1: common atlas chooser, written after the asset reset.
+    # MONOLITH_ATLAS_HOME_V1: separate atlas chooser, preserving UK index.
     (web_out / "atlas-home.html").write_text(build_atlas_home(), encoding="utf-8")
-    shutil.copy2(web_out / "atlas-home.html", web_out / "index.html")
     # MONOLITH_FRANCE_INTEGRATION_V2: module copied after the asset reset.
     france_src = REPO_ROOT / "integrations" / "monolith-france"
     if france_src.is_dir():
@@ -152,7 +151,7 @@ if __name__ == "__main__":
         self_hook = (self_host / "scripts/prepare_android_assets.py").read_text(encoding="utf-8")
         assert self_hook.count("MONOLITH_FRANCE_INTEGRATION_V2") == 1
         patched_activity = activity.read_text(encoding="utf-8")
-        assert "/assets/web/france/web/index.html" in patched_activity
+        assert "/assets/web/atlas-home.html" in patched_activity
         assert "fileUploadCallback?.onReceiveValue(null)\n                    fileUploadCallback = null" in patched_activity
         assert "Megalith LiDAR France" in strings.read_text(encoding="utf-8")
         backup_root = repo / ".monolith-france-backups"
@@ -172,11 +171,14 @@ if __name__ == "__main__":
         invoke(repo, "--force")
         subprocess.run([sys.executable, str(prepare)], check=True)
         assets = repo / "android/app/src/main/assets/web"
-        home = (assets / "index.html").read_text(encoding="utf-8")
+        home = (assets / "atlas-home.html").read_text(encoding="utf-8")
         assert "Choisir un atlas" in home
-        assert 'href="/assets/web/france/web/index.html"' in home
-        assert 'href="/assets/web/index.html"' in home
-        assert (assets / "atlas-home.html").read_text(encoding="utf-8") == home
+        assert "/assets/web/france/web/index.html" in home
+        assert "/assets/web/index.html" in home
+        assert (assets / "index.html").read_text(encoding="utf-8") == "<html>UK atlas</html>"
+        france_html = (assets / "france/web/index.html").read_text(encoding="utf-8")
+        assert "/assets/web/atlas-home.html" in france_html
+        assert "/assets/web/index.html" in france_html
         assert (assets / "france/web/index.html").is_file()
         assert (assets / "france/config/france-config.json").is_file()
         expected_sizes = {
@@ -195,7 +197,7 @@ if __name__ == "__main__":
                 image.load()
                 assert image.convert("RGBA").getchannel("A").getbbox() is not None, name
         assert prep_text.count("MONOLITH_FRANCE_INTEGRATION_V2") == 1
-        print("PASS — dry-run, backups, START_URL, forced re-install, post-cleanup asset generation.")
+        print("PASS — dry-run, backups, chooser routes, preserved UK index, forced re-install and regenerated assets.")
     return 0
 
 
