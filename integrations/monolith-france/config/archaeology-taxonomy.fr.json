@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "1.2",
+  "schemaVersion": "1.3",
   "categories": [
     {
       "id": "megaliths",
@@ -23,11 +23,6 @@
             "historic": "archaeological_site",
             "archaeological_site": "megalith"
           }
-        },
-        {
-          "tags": {
-            "man_made": "cairn"
-          }
         }
       ]
     },
@@ -47,22 +42,9 @@
       "osm": [
         {
           "tags": {
-            "archaeological_site": "tumulus"
-          }
-        },
-        {
-          "tags": {
-            "historic": "tumulus"
-          }
-        },
-        {
-          "tags": {
-            "historic": "barrow"
-          }
-        },
-        {
-          "tags": {
-            "man_made": "cairn"
+            "historic": "archaeological_site",
+            "archaeological_site": "megalith",
+            "megalith_type": "round_barrow"
           }
         }
       ]
@@ -84,17 +66,8 @@
       "osm": [
         {
           "tags": {
+            "historic": "archaeological_site",
             "archaeological_site": "fortification"
-          }
-        },
-        {
-          "tags": {
-            "historic": "fort"
-          }
-        },
-        {
-          "tags": {
-            "historic": "fortification"
           }
         }
       ]
@@ -116,13 +89,15 @@
       "osm": [
         {
           "tags": {
-            "historic": "villa"
+            "historic": "archaeological_site",
+            "archaeological_site": "roman_villa"
           }
         },
         {
           "tags": {
             "historic": "archaeological_site",
-            "archaeological_site": "settlement"
+            "archaeological_site": "settlement",
+            "historic:civilization": "ancient_roman"
           }
         }
       ]
@@ -183,5 +158,5 @@
       ]
     }
   ],
-  "interpretation": "Les règles multi-tags réduisent les résultats ambigus. Certains tags génériques restent des indices contributifs et doivent être recoupés. Les catégories servent à organiser les relevés et les résultats documentaires ; elles ne constituent ni une datation ni une validation archéologique."
+  "interpretation": "Les familles archéologiques utilisent en priorité des combinaisons OSM documentées. Les valeurs `historic=castle`, `historic=fort` et `historic=city_gate` décrivent des objets historiques visibles, pas nécessairement des vestiges archéologiques enfouis. Les résultats restent des données contributives et doivent être recoupés. Les cairns `man_made=cairn` ne sont pas inclus automatiquement, car cette valeur peut désigner des monticules de pierres de repérage ou des cairns non archéologiques."
 }
