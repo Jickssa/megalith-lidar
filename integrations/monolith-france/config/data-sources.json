@@ -1,13 +1,71 @@
 {
   "sources": [
-    {"id":"ign-plan-v2","provider":"IGN / Géoplateforme","type":"XYZ/WMTS","url":"https://data.geopf.fr/wmts?SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&FORMAT=image/png&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}","attribution":"© IGN — Géoplateforme"},
-    {"id":"ign-lidar-hd-mnt","provider":"IGN / Géoplateforme","type":"WMTS","layer":"IGNF_LIDAR-HD_MNT_ELEVATION.ELEVATIONGRIDCOVERAGE.SHADOW","attribution":"© IGN — LiDAR HD"},
-    {"id":"ign-lidar-hd-mns","provider":"IGN / Géoplateforme","type":"WMTS","layer":"IGNF_LIDAR-HD_MNS_ELEVATION.ELEVATIONGRIDCOVERAGE.SHADOW","attribution":"© IGN — LiDAR HD"},
-    {"id":"ign-lidar-hd-mnh","provider":"IGN / Géoplateforme","type":"WMTS","layer":"IGNF_LIDAR-HD_MNH_ELEVATION.ELEVATIONGRIDCOVERAGE.SHADOW","attribution":"© IGN — LiDAR HD"},
-    {"id":"ign-geocoder","provider":"IGN / Géoplateforme","type":"JSON API","url":"https://data.geopf.fr/geocodage/search"},
-    {"id":"ign-poi","provider":"IGN / Géoplateforme","type":"POI API","url":"https://data.geopf.fr/geocodage/search" ,"poiSubtype":"mégalithe","note":"Le sous-type mégalithe est découvert dans les capacités de l'API ; il ne doit pas être envoyé comme catégorie racine sans résolution."},
-    {"id":"osm-overpass","provider":"OpenStreetMap contributors","type":"Overpass API","endpoints":["https://overpass-api.de/api/interpreter","https://overpass.kumi.systems/api/interpreter"],"attribution":"© OpenStreetMap contributors"},
-    {"id":"merimee","provider":"Ministère de la Culture","type":"Catalogue public","url":"https://culture.data.gouv.fr/datasets/immeubles-proteges-au-titre-des-monuments-historiques-2/","note":"Source de recoupement, pas un inventaire archéologique exhaustif."}
+    {
+      "id": "ign-plan-v2",
+      "provider": "IGN / Géoplateforme",
+      "type": "XYZ/WMTS",
+      "url": "https://data.geopf.fr/wmts?SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&FORMAT=image/png&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}",
+      "attribution": "© IGN — Géoplateforme"
+    },
+    {
+      "id": "ign-lidar-hd-mnt",
+      "provider": "IGN / Géoplateforme",
+      "type": "WMTS",
+      "layer": "IGNF_LIDAR-HD_MNT_ELEVATION.ELEVATIONGRIDCOVERAGE.SHADOW",
+      "attribution": "© IGN — LiDAR HD"
+    },
+    {
+      "id": "ign-lidar-hd-mns",
+      "provider": "IGN / Géoplateforme",
+      "type": "WMTS",
+      "layer": "IGNF_LIDAR-HD_MNS_ELEVATION.ELEVATIONGRIDCOVERAGE.SHADOW",
+      "attribution": "© IGN — LiDAR HD"
+    },
+    {
+      "id": "ign-lidar-hd-mnh",
+      "provider": "IGN / Géoplateforme",
+      "type": "WMTS",
+      "layer": "IGNF_LIDAR-HD_MNH_ELEVATION.ELEVATIONGRIDCOVERAGE.SHADOW",
+      "attribution": "© IGN — LiDAR HD"
+    },
+    {
+      "id": "ign-geocoder",
+      "provider": "IGN / Géoplateforme",
+      "type": "JSON API",
+      "url": "https://data.geopf.fr/geocodage/search"
+    },
+    {
+      "id": "ign-poi",
+      "provider": "IGN / Géoplateforme",
+      "type": "Autocomplétion POI API",
+      "url": "https://data.geopf.fr/geocodage/completion/",
+      "poiSubtype": "mégalithe",
+      "note": "Le type POI doit être résolu depuis GetCapabilities. Ce flux d'autocomplétion ne remplace pas une interrogation exhaustive de sites archéologiques.",
+      "capabilitiesUrl": "https://data.geopf.fr/geocodage/completion/getcapabilities",
+      "parameter": "poiType"
+    },
+    {
+      "id": "osm-overpass",
+      "provider": "OpenStreetMap contributors",
+      "type": "Overpass API",
+      "endpoints": [
+        "https://overpass-api.de/api/interpreter",
+        "https://overpass.kumi.systems/api/interpreter"
+      ],
+      "attribution": "© OpenStreetMap contributors",
+      "queryContract": "Taxonomy-driven Overpass QL; user query; bbox; node/way/relation; output center tags"
+    },
+    {
+      "id": "merimee",
+      "provider": "Ministère de la Culture",
+      "type": "Catalogue public",
+      "url": "https://culture.data.gouv.fr/datasets/immeubles-proteges-au-titre-des-monuments-historiques-2/",
+      "note": "Source de recoupement, pas un inventaire archéologique exhaustif."
+    }
   ],
-  "coverage":{"country":"FR","lidarHd":"progressive; inspect local coverage","offline":"not guaranteed"}
+  "coverage": {
+    "country": "FR",
+    "lidarHd": "progressive; inspect local coverage",
+    "offline": "not guaranteed"
+  }
 }
