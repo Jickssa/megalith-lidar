@@ -1,0 +1,31 @@
+{
+  "schemaVersion": "1.0",
+  "countryCode": "XX",
+  "name": {
+    "en-GB": "Example country"
+  },
+  "status": "community-template",
+  "defaultLocale": "en-GB",
+  "supportedLocales": [
+    "en-GB"
+  ],
+  "coordinateReferenceSystem": "EPSG:4326",
+  "map": {
+    "center": [
+      0,
+      0
+    ],
+    "zoom": 5,
+    "minZoom": 3,
+    "maxZoom": 18,
+    "bounds": null
+  },
+  "atlasEntry": "/assets/web/community-template/index.html",
+  "sources": [],
+  "capabilities": {
+    "lidar": false,
+    "archaeologicalSearch": "not-configured",
+    "aiDetection": false
+  },
+  "licences": []
+}
