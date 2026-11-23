@@ -100,6 +100,8 @@ def main() -> int:
             if ref in (
                 "/assets/web/index.html",
                 "/assets/web/atlas-home.html",
+                "/assets/web/france-home.html",
+                "/assets/web/uk-home.html",
             ):
                 # Deliberate shared entry routes in the host APK.
                 continue
