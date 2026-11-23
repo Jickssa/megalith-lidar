@@ -43,22 +43,51 @@ class MainActivity : Activity() {
     inner class AndroidBridge {
         @JavascriptInterface
         fun saveOrShareFile(filename: String, mimeType: String, content: String) {
-            runOnUiThread {
-                try {
-                    val safeName = filename.replace(Regex("[^A-Za-z0-9._-]"), "_")
-                        .ifEmpty { "megalith_export.txt" }
-                    val exportsDir = File(cacheDir, "exports").apply { mkdirs() }
-                    val outFile = File(exportsDir, safeName)
-                    outFile.writeText(content, Charsets.UTF_8)
-                    shareExportedFile(outFile, mimeType)
-                } catch (e: Exception) {
-                    Toast.makeText(
-                        this@MainActivity,
-                        "Export failed: ${e.message}",
-                        Toast.LENGTH_SHORT
-                    ).show()
+            if (content.length > MAX_EXPORT_BYTES) {
+                runOnUiThread {
+                    Toast.makeText(this@MainActivity, "Export refused: file exceeds 25 MiB.", Toast.LENGTH_LONG).show()
                 }
+                return
             }
+            val bytes = content.toByteArray(Charsets.UTF_8)
+            if (bytes.size > MAX_EXPORT_BYTES) {
+                runOnUiThread {
+                    Toast.makeText(this@MainActivity, "Export refused: file exceeds 25 MiB.", Toast.LENGTH_LONG).show()
+                }
+                return
+            }
+            val safeMime = when (mimeType.lowercase()) {
+                "application/geo+json", "application/json", "text/plain",
+                "application/gpx+xml", "application/xml" -> mimeType.lowercase()
+                else -> "application/octet-stream"
+            }
+            val safeName = filename.replace(Regex("[^A-Za-z0-9._-]"), "_")
+                .trim('.', '_')
+                .ifEmpty { "megalith_export.txt" }
+                .take(120)
+            val suffix = safeName.substringAfterLast('.', "")
+                .takeIf { it.matches(Regex("[A-Za-z0-9]{1,10}")) }
+                ?.let { ".$it" } ?: ".txt"
+
+            // Create and write a unique cache file off the UI thread.
+            Thread {
+                try {
+                    val exportsDir = File(cacheDir, "exports").apply { mkdirs() }
+                    val outFile = File.createTempFile("monolith-", suffix, exportsDir)
+                    outFile.writeBytes(bytes)
+                    runOnUiThread {
+                        try {
+                            shareExportedFile(outFile, safeMime)
+                        } catch (e: Exception) {
+                            Toast.makeText(this@MainActivity, "Export failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                } catch (e: Exception) {
+                    runOnUiThread {
+                        Toast.makeText(this@MainActivity, "Export failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }.start()
         }
     }
 
@@ -140,7 +169,12 @@ class MainActivity : Activity() {
                     openExternalUri(uri)
                     return true
                 }
-                if (uri.host == APP_HOST) {
+                if (
+                    scheme == "https" &&
+                    uri.host == APP_HOST &&
+                    uri.userInfo == null &&
+                    (uri.port == -1 || uri.port == 443)
+                ) {
                     val path = uri.path ?: ""
                     if (isDownloadableAssetPath(path)) {
                         shareBundledAsset(path.removePrefix("/assets/"))
@@ -152,7 +186,8 @@ class MainActivity : Activity() {
                     openExternalUri(uri)
                     return true
                 }
-                return false
+                // Block intent:, file:, content: and unknown custom schemes.
+                return true
             }
         }
 
@@ -183,13 +218,25 @@ class MainActivity : Activity() {
             ): Boolean {
                 fileUploadCallback?.onReceiveValue(null)
                 fileUploadCallback = filePathCallback
+                val requestedTypes = fileChooserParams.acceptTypes
+                    .flatMap { it.split(",") }
+                    .map { it.trim().lowercase() }
+                    .flatMap { type ->
+                        when (type) {
+                            ".json" -> listOf("application/json")
+                            ".geojson" -> listOf("application/geo+json", "application/json")
+                            "application/json", "application/geo+json", "text/json" -> listOf(type)
+                            else -> emptyList()
+                        }
+                    }
+                    .distinct()
+                    .ifEmpty { listOf("application/json", "application/geo+json", "text/plain") }
                 val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
                     addCategory(Intent.CATEGORY_OPENABLE)
-                    type = "*/*"
-                    putExtra(
-                        Intent.EXTRA_MIME_TYPES,
-                        arrayOf("application/json", "application/geo+json", "text/plain")
-                    )
+                    type = if (requestedTypes.size == 1) requestedTypes.first() else "*/*"
+                    if (requestedTypes.size > 1) {
+                        putExtra(Intent.EXTRA_MIME_TYPES, requestedTypes.toTypedArray())
+                    }
                 }
                 return try {
                     startActivityForResult(
@@ -198,6 +245,7 @@ class MainActivity : Activity() {
                     )
                     true
                 } catch (_: ActivityNotFoundException) {
+                    fileUploadCallback?.onReceiveValue(null)
                     fileUploadCallback = null
                     false
                 }
@@ -404,5 +452,6 @@ class MainActivity : Activity() {
             "https://raw.githubusercontent.com/GlassOnTin/megalith-lidar/main/docs/diagnostics/"
         private const val REQ_LOCATION_PERMISSION = 1001
         private const val REQ_FILE_CHOOSER = 1002
+        private const val MAX_EXPORT_BYTES = 25 * 1024 * 1024
     }
 }

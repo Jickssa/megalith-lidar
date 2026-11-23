@@ -1,6 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict');
-const {getStorageLimits,isValidObservationFeature,parseObservationImport}=require('../web/app.js');
+const {getStorageLimits,isValidObservationFeature,parseObservationImport,isGeoJsonFile}=require('../web/app.js');
 const point=(lon,lat,properties={title:'test'})=>({type:'Feature',geometry:{type:'Point',coordinates:[lon,lat]},properties});
 
 assert.equal(isValidObservationFeature(point(2.35,48.86)),true,'coordonnées WGS84 valides');
@@ -22,4 +22,10 @@ assert.throws(()=>parseObservationImport({type:'Feature',geometry:{}},10,0,limit
 assert.throws(()=>parseObservationImport({type:'FeatureCollection',features:[1,2,3,4]},10,0,limits),/dépasse/);
 assert.deepEqual(getStorageLimits({storage:{maxImportBytes:1234,maxFeatures:42}}),{maxImportBytes:1234,maxFeatures:42});
 assert.deepEqual(getStorageLimits({storage:{maxImportBytes:-1,maxFeatures:'40'}}),{maxImportBytes:20*1024*1024,maxFeatures:5000});
-console.log('PASS — GeoJSON validation, WGS84 ranges, per-file/cumulative limits and configuration fallbacks.');
+assert.equal(isGeoJsonFile({name:'terrain.geojson',type:''}),true,'geojson extension accepted with empty provider MIME');
+assert.equal(isGeoJsonFile({name:'notes.json',type:'application/json'}),true,'JSON MIME accepted');
+assert.equal(isGeoJsonFile({name:'payload.bin',type:'application/geo+json'}),true,'GeoJSON MIME accepted without extension');
+assert.equal(isGeoJsonFile({name:'payload.bin',type:'application/octet-stream'}),false,'generic binary rejected');
+assert.equal(isGeoJsonFile({name:'page.html',type:'text/html'}),false,'HTML rejected');
+assert.equal(isGeoJsonFile({name:'archive.zip',type:'application/zip'}),false,'archive rejected');
+console.log('PASS — GeoJSON validation, WGS84 ranges, MIME/extension filter, size limits and configuration fallbacks.');

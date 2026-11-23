@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.2.1 — 2026-11-23
+
+- Pont d'export Android borné à 25 Mio, écrit hors du thread UI et stocké sous nom temporaire unique.
+- MIME d'export limités à une liste connue.
+- Filtre Android de sélection de fichiers basé sur les types acceptés par le champ Web.
+- Schémas URI internes strictement limités à HTTPS/appassets ; les schémas non pris en charge sont bloqués.
+- Import France : contrôle du type JSON/GeoJSON par extension ou MIME avant lecture.
+- Tests Node, fixture installateur et validation statique étendus.
+- CSS : cibles tactiles et disposition paysage mobile améliorées.
+
+
 ## 1.2.0 — 2026-11-23
 
 - Ajout de deux pages d'accueil territoriales distinctes entre le sélecteur commun et les Atlas France / Royaume-Uni.

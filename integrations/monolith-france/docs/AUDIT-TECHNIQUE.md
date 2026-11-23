@@ -34,3 +34,33 @@ Les modèles et jeux de données amont sont liés à l'Angleterre : British Nati
 - Les POI IGN, OSM et les immeubles protégés ne sont pas exhaustifs de l'archéologie.
 - Les services cartographiques et les recherches nécessitent une connexion. Le cache hors ligne n'est pas garanti.
 - La compilation Android et le test sur appareil ne sont pas réputés effectués par cet audit.
+
+
+## Audit de robustesse 1.2.1 — corrections appliquées
+
+### Pont JavaScript Android
+
+L'ancien pont `saveOrShareFile` écrivait un contenu de taille illimitée directement sur le thread UI, utilisait un nom de cache déterministe (risque d'écrasement d'un export encore utilisé) et acceptait le MIME transmis sans filtrage. La version 1.2.1 applique une limite de 25 Mio, borne les types MIME, écrit en arrière-plan et utilise un fichier temporaire unique.
+
+### Sélecteur de fichiers
+
+Le sélecteur Android ne reprenait pas les types réellement demandés par l'élément Web. Il normalise maintenant les extensions .json/.geojson et les MIME autorisés. Le callback est toujours libéré lorsque le sélecteur n'est pas disponible.
+
+### Navigation WebView
+
+La route appassets est maintenant acceptée uniquement pour HTTPS, l'hôte attendu, sans userinfo et avec un port absent ou 443. Les liens HTTP(S) externes sont transmis au navigateur externe. Les schémas non pris en charge (notamment intent:, file: et content:) sont bloqués.
+
+### Import GeoJSON
+
+Le parser validait déjà la structure FeatureCollection, les points WGS84 et les limites de taille/nombre. Le fichier est désormais aussi refusé avant lecture s'il n'a ni extension JSON/GeoJSON ni MIME JSON/GeoJSON connu.
+
+### Ergonomie
+
+Les zones tactiles sont portées à 40 px minimum pour les commandes principales ; l'en-tête peut se replier sur petit écran et la carte reçoit une hauteur dédiée en mode paysage.
+
+### Limites résiduelles à traiter
+
+- Les téléchargements PNG de diagnostic depuis GitHub ne possèdent pas encore de limite explicite de taille de réponse ni de politique de nettoyage du cache.
+- Le pont `addJavascriptInterface` est visible dans tous les frames d'une page WebView selon Android ; les pages actuelles ne contiennent pas d'iframe distante identifiée, mais l'ajout futur de contenu embarqué non fiable devra être interdit ou isolé.
+- Le bouton Retour reste implémenté via la méthode historique `onBackPressed` ; il doit être testé sur versions Android récentes avec navigation prédictive.
+- L'identifiant d'application est resté `uk.megalith.lidar`. L'APK de base et l'APK Debug ont le même applicationId ; la compatibilité de signature n'a pas été démontrée par la seule inspection des archives.

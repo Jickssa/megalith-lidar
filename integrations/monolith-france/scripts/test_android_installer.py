@@ -142,6 +142,11 @@ if __name__ == "__main__":
         assert "france-home.html" in self_hook and "uk-home.html" in self_hook
         patched_activity = activity.read_text(encoding="utf-8")
         assert "/assets/web/atlas-home.html" in patched_activity
+        actual_activity = (ROOT.parents[1] / "android/app/src/main/java/uk/megalith/lidar/MainActivity.kt").read_text(encoding="utf-8")
+        assert "MAX_EXPORT_BYTES" in actual_activity
+        assert "File.createTempFile" in actual_activity
+        assert "fileChooserParams.acceptTypes" in actual_activity
+        assert "uri.userInfo == null" in actual_activity
         assert "fileUploadCallback?.onReceiveValue(null)\n                    fileUploadCallback = null" in patched_activity
         assert "Megalith LiDAR France" in strings.read_text(encoding="utf-8")
         backup_root = repo / ".monolith-france-backups"

@@ -1,92 +1,43 @@
-# Validation et recette — Monolith France 1.2.0
+# Audit de recette et validation — Monolith France 1.2.1
 
-## Parcours cible
+## Environnement de test
 
-- Démarrage → `assets/web/atlas-home.html` (sélecteur commun).
-- Sélecteur → `assets/web/france-home.html` → `assets/web/france/web/index.html` (Atlas France).
-- Sélecteur → `assets/web/uk-home.html` → `assets/web/index.html` (Atlas britannique original).
-- Les pages territoriales offrent un retour au sélecteur et un accès à l'accueil de l'autre territoire.
-- La copie embarquée de l'Atlas britannique ajoute un lien `Choose atlas` vers le sélecteur ; sa source est contrôlée comme immuable.
+- APK originale et APK Debug 1.2.0 disponibles et inspectées directement.
+- Aucun appareil Android ni émulateur exposé dans l'environnement : `adb` absent et aucun device accessible. Aucune recette tactile n'est revendiquée.
+- SHA-256 APK originale : `cf6362d6c5513c08740f2b0f58ac3178f29b11f0584117a2b3bd2911d6bdd3dd`.
+- SHA-256 APK Debug 1.2.0 : `5e7b1cc3c6b2361e883c41408d59c6b7fd8e4030af4e3ce4a090d84095071022`.
 
-## Contrôles 1.2.0
+## Constats reproductibles sur APK 1.2.0
 
-- Tests de génération des trois pages et des liens entre elles.
-- Contrôle des CTA vers les deux interfaces cartographiques complètes.
-- Vérification du lien de retour injecté une seule fois dans l'Atlas britannique embarqué.
-- Vérification de l'absence de modification du fichier source britannique.
-- Vérification de la mise à niveau/réinstallation du hook existant.
-- CI push #118 et PR #119 : succès complets.
-- Tests statiques, Node, Python, fixture d'installation et de réinstallation : tous réussis.
-- Compilation Debug : réussie sur le checkout Android réel.
-- Vérifications de l'APK : CRC, `zipalign` et `apksigner verify` réussis.
-- APK inspectée : 19 017 213 octets, 97 entrées, SHA-256 `1e0afc881fcf463dc180dce0c3b07b9eab0ab60da9d5bc21a974565672f9bec4`.
-- Les dix contrôles de routes et de langue sur les pages embarquées sont positifs.
-- Artefacts : push #118 ID `14789160054` ; PR #119 ID `14788607900`.
-- Recette physique Android et tests réels des services distants : non exécutés.
+- Les deux APK ont le même applicationId : `uk.megalith.lidar`.
+- APK originale : 41 entrées, 18 assets Web, une seule page HTML `assets/web/index.html`, démarrage DEX sur cette page.
+- APK finale 1.2.0 : 97 entrées, 46 assets Web, cinq pages attendues, démarrage DEX sur `assets/web/atlas-home.html`.
+- Le hash de l'index britannique source est différent parce que la copie APK reçoit exactement un lien « Choose atlas ». Après retrait de cette insertion, son HTML est identique à l'original.
+- Les références locales des cinq pages se résolvent dans le paquet.
+- Les identifiants WMTS IGN pour MNT, MNS, MNH et Plan IGN v2 correspondent aux catalogues/documentations IGN consultés.
+- Les fichiers de données britanniques ne sont pas tous byte-identiques entre les deux APK : le préparateur actuel compact/déduplique les GeoJSON et régénère des exports OsmAnd/GPX. Les effectifs du survey_summary diffèrent aussi (ancienne version : 28 379 carrés terminés / 113 500 km² ; version embarquée : 35 036 / 140 128 km²). Ce changement correspond à une version de données plus récente et au mécanisme de compactage ; la recette fonctionnelle des tableaux et filtres reste nécessaire.
 
-## Écart documentaire avec l'APK originale fournie
+## Correctifs 1.2.1
 
-L'APK inspectée (SHA-256 `cf6362d6c5513c08740f2b0f58ac3178f29b11f0584117a2b3bd2911d6bdd3dd`) contient une unique page Web `assets/web/index.html`, directement chargée par Android. Le DEX référence `https://appassets.androidplatform.net/assets/web/index.html`. Aucun second HTML et aucun bouton « Atlas britannique » n'ont été trouvés dans cette APK. Le parcours à trois niveaux est donc une évolution nouvelle de Monolith, non une reproduction démontrée d'une navigation absente de ce binaire.
+- Pont d'export natif : limite 25 Mio, MIME restreints, écriture asynchrone, noms de fichiers temporaires uniques.
+- File chooser : normalisation des acceptTypes Android.
+- WebView : restriction des routes appassets et blocage des schémas non pris en charge.
+- Import GeoJSON : validation extension/MIME avant lecture.
+- Cibles tactiles et CSS paysage.
 
----
+## CI et compilation
 
-# Historique — validation et recette Monolith France 1.1.3 / build #110
+Les résultats de CI 1.2.1 seront ajoutés après le commit. Les contrôles 1.2.0 précédents étaient verts sur push #120 et PR #121.
 
-## CI automatisée
+## Recette physique à faire
 
-- Push #110 : succès complet — https://github.com/Jickssa/megalith-lidar/actions/runs/45097292720
-- Pull request #111 : succès complet — https://github.com/Jickssa/megalith-lidar/actions/runs/45097297817
-- Validation paquet : réussie.
-- Syntaxe JS : réussie.
-- Tests Node GeoJSON : réussis.
-- Syntaxe Python : réussie.
-- Fixture installateur : réussie ; génération synthétique et contrôle du hook dans le préparateur upstream réel.
-- Installateur dans le checkout Android : réussi.
-- Gradle `assembleDebug` : réussi.
-- Contrôle CRC APK : réussi.
-- `zipalign` : réussi.
-- `apksigner verify` : réussi, signature APK v2.
+La procédure ADB et la liste des scénarios sont fournies dans le rapport de cette reprise. L'installation par-dessus l'application 3.2.0 doit d'abord vérifier la signature. Ne pas désinstaller l'application en production sans sauvegarde des données locales.
 
-## Contrôle de la navigation
+## Limites résiduelles
 
-Routes embarquées :
-- accueil : `assets/web/atlas-home.html`
-- Royaume-Uni : `assets/web/index.html` (chemin historique)
-- France : `assets/web/france/web/index.html`
+- Tests en direct des couches WMTS, géocodeur IGN et Overpass non exécutés depuis Android.
+- Pas de test de géolocalisation/permis, de partage via FileProvider ni de stockage WebView sur appareil.
+- Nettoyage et plafond de taille de cache des PNG de diagnostic à prévoir.
+- Gestion Android predictive back à tester.
+- Compatibilité de signature entre l'APK originale et la Debug non établie par cette analyse.
 
-Contenu confirmé directement :
-- l'accueil affiche « Atlas France » et « Atlas britannique » ;
-- le lien France cible `/assets/web/france/web/index.html` ;
-- le lien UK cible `/assets/web/index.html` ;
-- la page France propose `/assets/web/atlas-home.html` et le lien UK.
-- l'index UK n'est pas remplacé par l'accueil.
-
-## Contrôle APK direct
-
-- APK Debug extraite de l'artefact GitHub run #110.
-- Archive zip artefact : CRC valide.
-- APK interne : CRC valide, 95 entrées.
-- Taille APK : 19 010 091 octets.
-- SHA-256 : `4ef84499c4e3a5d26515d5bc991cb3fd7f5c1695232a67539de03af92517956c`.
-- Checksum de l'artefact : concordant.
-- Artefact GitHub : ID `14783892920`.
-- URL : https://github.com/Jickssa/megalith-lidar/actions/runs/45097292720/artifacts/14783892920
-
-## Recette sur appareil non réalisée pour la nouvelle navigation
-
-L'utilisateur a déjà testé une APK antérieure, mais l'écran commun vient d'être ajouté après son test. Il reste à valider sur son appareil :
-1. Lancement → « Choisir un atlas ».
-2. Accueil → Atlas France.
-3. France → « Choisir un atlas ».
-4. Accueil → Atlas britannique.
-5. France → Atlas britannique.
-6. Vérifier que les datasets et ressources de l'atlas britannique continuent de fonctionner.
-7. Tester retour arrière Android, absence d'écran blanc et absence de boucle.
-8. Tester le reste des fonctions réseau et terrain séparément.
-
-## Limites connues
-
-- Aucune détection IA française active.
-- POI IGN « mégalithe » désactivé faute de schéma API validé.
-- Couverture LiDAR HD progressive et dépendante des emprises.
-- Les observations OSM et catalogues patrimoniaux sont non exhaustifs.

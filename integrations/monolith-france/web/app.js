@@ -61,9 +61,14 @@ function saveObs(){
 }
 function download(name,mime,data){if(window.MegalithAndroid?.saveOrShareFile){window.MegalithAndroid.saveOrShareFile(name,mime,data);return}const u=URL.createObjectURL(new Blob([data],{type:mime})),a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1200)}
 function exportObs(){download('monolith-france-observations.geojson','application/geo+json',JSON.stringify({type:'FeatureCollection',features:S.observations},null,2))}
+function isGeoJsonFile(f){
+ const name=String(f?.name||'').toLowerCase(),type=String(f?.type||'').toLowerCase();
+ return /\.(json|geojson)$/.test(name)||['application/json','application/geo+json','text/json'].includes(type);
+}
 async function importObs(f){
  if(!f)return;
  try{
+  if(!isGeoJsonFile(f))throw Error('Sélectionne un fichier .json ou .geojson.');
   const limits=getStorageLimits();
   if(f.size>limits.maxImportBytes)throw Error('Fichier trop volumineux (limite '+Math.round(limits.maxImportBytes/1024/1024)+' Mio).');
   const collection=JSON.parse(await f.text()),result=parseObservationImport(collection,f.size,S.observations.length,limits);
@@ -75,6 +80,6 @@ async function importObs(f){
 }
 function events(){$('searchButton').addEventListener('click',search);$('searchInput').addEventListener('keydown',e=>{if(e.key==='Enter')search()});$('basemapSelect').addEventListener('change',e=>{Object.values(S.base).forEach(l=>S.map.removeLayer(l));S.base[e.target.value].addTo(S.map)});[['layerMnt','mnt'],['layerMns','mns'],['layerMnh','mnh']].forEach(([id,k])=>$(id).addEventListener('change',e=>e.target.checked?S.over[k].addTo(S.map):S.map.removeLayer(S.over[k])));$('locateButton').addEventListener('click',()=>{if(!navigator.geolocation)return toast('Géolocalisation indisponible');navigator.geolocation.getCurrentPosition(p=>S.map.setView([p.coords.latitude,p.coords.longitude],15),e=>toast('Position indisponible : '+e.message),{timeout:10000})});$('addObservation').addEventListener('click',addObs);$('exportObservations').addEventListener('click',exportObs);$('importGeoJson').addEventListener('change',e=>importObs(e.target.files?.[0]));$('cancelDialog').addEventListener('click',()=>$('observationDialog').close());$('observationForm').addEventListener('submit',e=>{e.preventDefault();saveObs()})}
 async function init(){try{S.cfg=await getJson(CFG);await getJson(SRC);initMap();events();loadObs();$('mapStatus').textContent='Module prêt — requêtes à la demande'}catch(e){$('mapStatus').textContent='Initialisation impossible : '+e.message;toast('Erreur au démarrage du module France.')}}
-if(typeof module!=='undefined'&&module.exports)module.exports={getStorageLimits,isValidObservationFeature,parseObservationImport};
+if(typeof module!=='undefined'&&module.exports)module.exports={getStorageLimits,isValidObservationFeature,parseObservationImport,isGeoJsonFile};
 if(typeof document!=='undefined')document.addEventListener('DOMContentLoaded',init);
 })();

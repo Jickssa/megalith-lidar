@@ -52,7 +52,7 @@ def main() -> int:
         ERRORS.append("Limite d'import GeoJSON inattendue.")
     if storage.get("maxFeatures") != 5000:
         ERRORS.append("Limite cumulée d'observations attendue : 5 000.")
-    for contract in ("getStorageLimits", "isValidObservationFeature", "parseObservationImport", "persistObs"):
+    for contract in ("getStorageLimits", "isValidObservationFeature", "parseObservationImport", "persistObs", "isGeoJsonFile"):
         if contract not in js:
             ERRORS.append(f"Contrat de stockage/GeoJSON absent : {contract}")
     if not isinstance(taxonomy, dict) or not taxonomy:
@@ -170,6 +170,14 @@ def main() -> int:
         ERRORS.append("Endpoint Overpass primaire absent.")
     if "saveOrShareFile" not in js:
         ERRORS.append("Pont d'export natif non utilisé par le module.")
+    android_activity = ROOT.parents[1] / "android/app/src/main/java/uk/megalith/lidar/MainActivity.kt"
+    if android_activity.is_file():
+        native_text = android_activity.read_text(encoding="utf-8")
+        for native_contract in ("MAX_EXPORT_BYTES", "File.createTempFile", "fileChooserParams.acceptTypes", "uri.userInfo == null"):
+            if native_contract not in native_text:
+                ERRORS.append(f"Contrôle Android de sécurité absent : {native_contract}")
+    else:
+        ERRORS.append("MainActivity.kt introuvable : contrôle du pont Android impossible.")
     if ERRORS:
         print("VALIDATION ÉCHOUÉE")
         print("\n".join(f"- {error}" for error in ERRORS))
