@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.4 — 2026-11-23
+
+- Correction de l'insertion du hook Android après contrôle sur le véritable préparateur `prepare_android_assets.py`.
+- Test de régression étendu : exécution synthétique des assets et validation syntaxique de l'injection dans le préparateur amont réel.
+- Écran commun des atlas compilé et contrôlé directement dans l'APK Debug du run PR #111.
+
+
 ## 1.1.3 — 2026-11-23
 
 - Ajout d'un écran d'accueil commun présentant deux destinations : Atlas France et Atlas britannique.

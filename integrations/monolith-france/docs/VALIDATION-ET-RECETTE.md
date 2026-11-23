@@ -1,46 +1,60 @@
-# Validation et recette — Monolith France 1.1.3
+# Validation et recette — Monolith France 1.1.3 / build #110
 
-## Routes et invariants
+## CI automatisée
 
-- Point de démarrage Android : `/assets/web/atlas-home.html`.
-- Destination France : `/assets/web/france/web/index.html`.
-- Destination Royaume-Uni : `/assets/web/index.html`.
-- Le fichier britannique historique doit rester strictement inchangé lors de la génération des assets.
-- L'Atlas France doit proposer un retour vers `/assets/web/atlas-home.html`.
+- Push #110 : succès complet — https://github.com/Jickssa/megalith-lidar/actions/runs/45097292720
+- Pull request #111 : succès complet — https://github.com/Jickssa/megalith-lidar/actions/runs/45097297817
+- Validation paquet : réussie.
+- Syntaxe JS : réussie.
+- Tests Node GeoJSON : réussis.
+- Syntaxe Python : réussie.
+- Fixture installateur : réussie ; génération synthétique et contrôle du hook dans le préparateur upstream réel.
+- Installateur dans le checkout Android : réussi.
+- Gradle `assembleDebug` : réussi.
+- Contrôle CRC APK : réussi.
+- `zipalign` : réussi.
+- `apksigner verify` : réussi, signature APK v2.
 
-## CI
+## Contrôle de la navigation
 
-- Runs #92/#93 : échec du fixture sur l'assertion de l'accueil ; Gradle a été ignoré.
-- Runs #94/#95 : échec du validateur, qui bloquait l'URL commune.
-- Run push #96 : validation statique, syntaxe JS, tests Node et fixture installateur réussis.
-- Compilation Android du run #96 : en attente au dernier point de contrôle ; à vérifier à nouveau.
-- Le résultat PR et le build Android de la tête finale doivent être vérifiés avant livraison.
+Routes embarquées :
+- accueil : `assets/web/atlas-home.html`
+- Royaume-Uni : `assets/web/index.html` (chemin historique)
+- France : `assets/web/france/web/index.html`
 
-## Tests du fixture
+Contenu confirmé directement :
+- l'accueil affiche « Atlas France » et « Atlas britannique » ;
+- le lien France cible `/assets/web/france/web/index.html` ;
+- le lien UK cible `/assets/web/index.html` ;
+- la page France propose `/assets/web/atlas-home.html` et le lien UK.
+- l'index UK n'est pas remplacé par l'accueil.
 
-La fixture contrôle :
-- remplacement START_URL depuis l'ancienne route UK ou France ;
-- génération de `atlas-home.html` après le nettoyage des assets ;
-- absence d'écrasement de l'index britannique ;
-- présence des deux routes dans l'accueil ;
-- retour vers l'accueil et accès UK depuis l'Atlas France ;
-- réinstallation et génération répétée des assets.
+## Contrôle APK direct
 
-## APK de référence précédente
+- APK Debug extraite de l'artefact GitHub run #110.
+- Archive zip artefact : CRC valide.
+- APK interne : CRC valide, 95 entrées.
+- Taille APK : 19 010 091 octets.
+- SHA-256 : `4ef84499c4e3a5d26515d5bc991cb3fd7f5c1695232a67539de03af92517956c`.
+- Checksum de l'artefact : concordant.
+- Artefact GitHub : ID `14783892920`.
+- URL : https://github.com/Jickssa/megalith-lidar/actions/runs/45097292720/artifacts/14783892920
 
-Run PR #89, commit antérieur sans accueil commun :
-- taille : 19 010 059 octets ;
-- SHA-256 : `8c6de9c70e0a6c5da85f7c1818c98ddffa2ddf70320c04550529b540b478bcb1`;
-- artefact ID : `14783575119`.
-Ne pas utiliser cette APK pour valider la navigation 1.1.3.
+## Recette sur appareil non réalisée pour la nouvelle navigation
 
-## Recette manuelle sur téléphone
+L'utilisateur a déjà testé une APK antérieure, mais l'écran commun vient d'être ajouté après son test. Il reste à valider sur son appareil :
+1. Lancement → « Choisir un atlas ».
+2. Accueil → Atlas France.
+3. France → « Choisir un atlas ».
+4. Accueil → Atlas britannique.
+5. France → Atlas britannique.
+6. Vérifier que les datasets et ressources de l'atlas britannique continuent de fonctionner.
+7. Tester retour arrière Android, absence d'écran blanc et absence de boucle.
+8. Tester le reste des fonctions réseau et terrain séparément.
 
-1. Démarrer : l'écran « Choisir un atlas » apparaît.
-2. Ouvrir Atlas France : la carte France apparaît.
-3. Revenir par « Choisir un atlas » : l'écran commun réapparaît.
-4. Ouvrir l'Atlas britannique : son index et ses données doivent charger.
-5. Depuis France, utiliser le lien direct vers le Royaume-Uni.
-6. Utiliser le retour arrière Android et vérifier l'absence de boucle ou écran blanc.
-7. Vérifier les fonctions cartographiques des deux atlas.
-8. Tester séparément WMTS LiDAR, IGN géocodage, Overpass, géolocalisation, observations, persistance, import/export et annulation du sélecteur.
+## Limites connues
+
+- Aucune détection IA française active.
+- POI IGN « mégalithe » désactivé faute de schéma API validé.
+- Couverture LiDAR HD progressive et dépendante des emprises.
+- Les observations OSM et catalogues patrimoniaux sont non exhaustifs.
