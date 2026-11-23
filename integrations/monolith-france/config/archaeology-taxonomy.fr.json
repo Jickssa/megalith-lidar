@@ -1,13 +1,189 @@
 {
-  "schemaVersion":"1.0",
-  "categories":[
-    {"id":"dolmen","label":"Dolmen / sépulture mégalithique","terms":["dolmen","allée couverte","sépulture mégalithique"]},
-    {"id":"menhir","label":"Menhir / pierre dressée","terms":["menhir","pierre dressée","stèle"]},
-    {"id":"alignment","label":"Alignement / cercle","terms":["alignement mégalithique","cromlech","enceinte à pierres"]},
-    {"id":"tumulus","label":"Tumulus / tertre","terms":["tumulus","tertres","cairn"]},
-    {"id":"enclosure","label":"Enceinte / fortification","terms":["enceinte","oppidum","enceinte protohistorique"]},
-    {"id":"ancient-road","label":"Voie ancienne / structure linéaire","terms":["voie antique","voie romaine","chemin ancien"]},
-    {"id":"uncertain","label":"Structure à déterminer","terms":[]}
+  "schemaVersion": "1.1",
+  "categories": [
+    {
+      "id": "megaliths",
+      "label": "Mégalithes et sépultures préhistoriques",
+      "periods": [
+        "Neolithique",
+        "Âge du Bronze"
+      ],
+      "terms": [
+        "dolmen",
+        "menhir",
+        "allée couverte",
+        "cairn",
+        "cromlech",
+        "stone circle",
+        "tumulus"
+      ],
+      "osm": [
+        {
+          "key": "historic",
+          "value": "archaeological_site"
+        },
+        {
+          "key": "archaeological_site",
+          "value": "megalith"
+        },
+        {
+          "key": "man_made",
+          "value": "cairn"
+        }
+      ]
+    },
+    {
+      "id": "tumulus",
+      "label": "Tumulus, tertres et cairns",
+      "periods": [
+        "Préhistoire",
+        "Protohistoire"
+      ],
+      "terms": [
+        "tumulus",
+        "tertre",
+        "cairn",
+        "barrow"
+      ],
+      "osm": [
+        {
+          "key": "archaeological_site",
+          "value": "tumulus"
+        },
+        {
+          "key": "historic",
+          "value": "tumulus"
+        },
+        {
+          "key": "historic",
+          "value": "barrow"
+        },
+        {
+          "key": "man_made",
+          "value": "cairn"
+        }
+      ]
+    },
+    {
+      "id": "enclosures",
+      "label": "Enceintes, oppida et fortifications anciennes",
+      "periods": [
+        "Protohistoire",
+        "Antiquité"
+      ],
+      "terms": [
+        "oppidum",
+        "enceinte",
+        "hillfort",
+        "fortification",
+        "camp"
+      ],
+      "osm": [
+        {
+          "key": "historic",
+          "value": "archaeological_site"
+        },
+        {
+          "key": "historic",
+          "value": "fort"
+        },
+        {
+          "key": "historic",
+          "value": "fortification"
+        },
+        {
+          "key": "archaeological_site",
+          "value": "fortification"
+        }
+      ]
+    },
+    {
+      "id": "roman",
+      "label": "Sites gallo-romains et romains",
+      "periods": [
+        "Antiquité"
+      ],
+      "terms": [
+        "villa gallo-romaine",
+        "temple",
+        "fanum",
+        "thermes",
+        "camp romain",
+        "établissement romain"
+      ],
+      "osm": [
+        {
+          "key": "historic",
+          "value": "roman_villa"
+        },
+        {
+          "key": "historic",
+          "value": "roman_settlement"
+        },
+        {
+          "key": "historic",
+          "value": "roman_camp"
+        },
+        {
+          "key": "historic",
+          "value": "archaeological_site"
+        }
+      ]
+    },
+    {
+      "id": "ancient-roads",
+      "label": "Voies anciennes et ouvrages",
+      "periods": [
+        "Antiquité",
+        "Moyen Âge"
+      ],
+      "terms": [
+        "voie romaine",
+        "chaussée",
+        "pont ancien",
+        "aqueduc"
+      ],
+      "osm": [
+        {
+          "key": "historic",
+          "value": "roman_road"
+        },
+        {
+          "key": "historic",
+          "value": "milestone"
+        },
+        {
+          "key": "highway",
+          "value": "track"
+        }
+      ]
+    },
+    {
+      "id": "medieval",
+      "label": "Patrimoine médiéval fortifié",
+      "periods": [
+        "Moyen Âge"
+      ],
+      "terms": [
+        "château",
+        "motte castrale",
+        "enceinte médiévale"
+      ],
+      "osm": [
+        {
+          "key": "historic",
+          "value": "castle"
+        },
+        {
+          "key": "historic",
+          "value": "city_gate"
+        },
+        {
+          "key": "historic",
+          "value": "fort"
+        }
+      ]
+    }
   ],
-  "interpretation":"Les catégories servent à organiser les relevés et les résultats documentaires ; elles ne constituent pas une datation ni une validation archéologique."
+  "interpretation": "Les catégories servent à organiser les relevés et les résultats documentaires. Les objets OSM sont des données contributives, pas une validation archéologique. Les recherches qui utilisent un tag générique peuvent retourner des résultats ambigus à vérifier."
 }
