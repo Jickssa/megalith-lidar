@@ -1,4 +1,4 @@
-# Navigation 1.2.2 — clarification après retour utilisateur
+# Validation 1.2.3 — navigation et cache diagnostic
 
 ## Architecture rectifiée
 
@@ -24,3 +24,14 @@ Tests physiques : non exécutés faute d'appareil.
 
 ---
 
+
+## Contrôles ajoutés en 1.2.3
+
+- Sélecteur principal : la destination UK est explicitement libellée « Atlas UK » et conserve la cible réelle `/assets/web/index.html`.
+- Atlas UK : le lien « Choose atlas » revient au sélecteur ; le lien ajouté ouvre réellement l’Atlas France. Aucun lien « UK Atlas » ne recharge la page courante.
+- La page d’introduction UK est en français (`lang="fr"`). L’interface cartographique UK historique reste en anglais : elle n’a pas été traduite dans ce lot.
+- Téléchargement de diagnostics : réponse limitée à 8 Mio, MIME `image/png`, signature PNG contrôlée, redirections désactivées.
+- Cache diagnostics : plafond de 64 Mio et 24 PNG, expiration après 30 jours, suppression des fichiers temporaires orphelins.
+- Les contrats sont contrôlés par le validateur et la fixture d’installation ; la compilation Gradle CI contrôle la syntaxe Kotlin.
+
+La recette physique sur appareil Android et la comparaison de certificat entre APK de production et APK Debug restent à effectuer.
