@@ -64,6 +64,15 @@ def main() -> int:
             ERRORS.append(f"Contrat de stockage/GeoJSON absent : {contract}")
     if not isinstance(taxonomy, dict) or not taxonomy:
         ERRORS.append("Taxonomie archéologique vide ou invalide.")
+    categories = taxonomy.get("categories", [])
+    if not isinstance(categories, list) or len(categories) < 5:
+        ERRORS.append("La taxonomie française doit exposer au moins cinq familles.")
+    else:
+        category_ids = [c.get("id") for c in categories if isinstance(c, dict)]
+        if len(category_ids) != len(set(category_ids)):
+            ERRORS.append("Identifiants de taxonomie dupliqués.")
+        if any(not isinstance(c.get("osm"), list) or not c["osm"] for c in categories if isinstance(c, dict)):
+            ERRORS.append("Chaque famille de recherche doit documenter ses règles OSM.")
 
     source_text = json.dumps(sources, ensure_ascii=False)
     for layer in ("IGNF_LIDAR-HD_MNT", "IGNF_LIDAR-HD_MNS", "IGNF_LIDAR-HD_MNH"):
@@ -175,6 +184,11 @@ def main() -> int:
         ERRORS.append("Le chemin de recherche de géocodage IGN doit rester identifiable.")
     if "overpass-api.de" not in js:
         ERRORS.append("Endpoint Overpass primaire absent.")
+    for search_contract in ("buildOverpassQuery", "normalizeTaxonomy", "osmElementToItem", "archaeologyCategory", "AbortController"):
+        if search_contract not in js and search_contract not in html:
+            ERRORS.append(f"Contrat du moteur de recherche absent : {search_contract}")
+    if "geocodage/completion/" not in source_text:
+        ERRORS.append("L'endpoint d'autocomplétion POI IGN doit être distinct du géocodeur direct.")
     if "saveOrShareFile" not in js:
         ERRORS.append("Pont d'export natif non utilisé par le module.")
     android_activity = ROOT.parents[1] / "android/app/src/main/java/uk/megalith/lidar/MainActivity.kt"
