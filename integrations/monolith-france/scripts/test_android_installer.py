@@ -148,7 +148,7 @@ if __name__ == "__main__":
         assert self_hook.count("MONOLITH_FRANCE_INTEGRATION_V2") == 1
         patched_activity = activity.read_text(encoding="utf-8")
         assert "/assets/web/france/web/index.html" in patched_activity
-        assert "fileUploadCallback?.onReceiveValue(null)\\n                    fileUploadCallback = null" in patched_activity
+        assert "fileUploadCallback?.onReceiveValue(null)\n                    fileUploadCallback = null" in patched_activity
         assert "Megalith LiDAR France" in strings.read_text(encoding="utf-8")
         backup_root = repo / ".monolith-france-backups"
         assert (backup_root / "android/app/src/main/java/uk/megalith/lidar/MainActivity.kt").is_file()
