@@ -1,6 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict');
-const {getStorageLimits,isValidObservationFeature,parseObservationImport,isGeoJsonFile,getSearchSettings,buildPlaceSearchUrl,normalizeTaxonomy,escapeOverpassValue,escapeOverpassRegex,buildOverpassTagSelector,queryBoxFromBounds,buildOverpassQuery,osmElementToItem,buildPoiAutocompleteUrl}=require('../web/app.js');
+const {getStorageLimits,isValidObservationFeature,parseObservationImport,isGeoJsonFile,getSearchSettings,buildPlaceSearchUrl,normalizeTaxonomy,escapeOverpassValue,escapeOverpassRegex,buildOverpassTagSelector,queryBoxFromBounds,buildOverpassQuery,osmElementToItem,deduplicateOsmItems,buildPoiAutocompleteUrl}=require('../web/app.js');
 const point=(lon,lat,properties={title:'test'})=>({type:'Feature',geometry:{type:'Point',coordinates:[lon,lat]},properties});
 
 assert.equal(isValidObservationFeature(point(2.35,48.86)),true,'coordonnées WGS84 valides');
@@ -59,7 +59,8 @@ const osmQuery=buildOverpassQuery({bounds:bbox,category:'megaliths',taxonomy,que
 assert.ok(osmQuery.includes('node["historic"="archaeological_site"]["archaeological_site"="megalith"]'),'nœud archéologique contraint au sous-type mégalithe');
 assert.ok(osmQuery.includes('way["historic"="archaeological_site"]["archaeological_site"="megalith"]'),'conjonction de tags appliquée aux ways');
 assert.ok(osmQuery.includes('relation["man_made"="cairn"]'),'cairn recherché sur les relations');
-assert.match(osmQuery,/name~"dolmen"/,'texte utilisateur appliqué à la requête');
+assert.match(osmQuery,/name~"dolmen"/,'texte utilisateur appliqué au nom');
+assert.match(osmQuery,/megalith_type~"dolmen"/,'recherche du sous-type indépendamment du nom');
 const safeRegexQuery=buildOverpassQuery({bounds:bbox,category:'megaliths',taxonomy,query:'barrow.*(east)'});
 assert.ok(safeRegexQuery.includes('name~"barrow\\\\.\\\\*\\\\(east\\\\)"'),'texte utilisateur échappé en regex littérale');
 const roadQuery=buildOverpassQuery({bounds:bbox,category:'ancient-roads',taxonomy});
@@ -71,6 +72,8 @@ assert.equal(osmItem.id,'osm:way:42','identifiant stable OSM');
 assert.equal(osmItem.title,'Dolmen test','nom OSM');
 assert.equal(osmItem.kind,'dolmen','sous-type prioritaire');
 assert.equal(osmItem.url,'https://www.openstreetmap.org/way/42','lien source OSM');
+const duplicates=deduplicateOsmItems([osmItem,{...osmItem,title:'Libellé alternatif'},{id:'osm:node:2',title:'Autre',lat:47.3,lon:0.3}]);
+assert.equal(duplicates.length,2,'doublons d’une même entité OSM supprimés');
 assert.equal(osmElementToItem({type:'relation',id:1,tags:{name:'Sans géométrie'}}),null,'objet sans géométrie écarté');
 const poiUrl=buildPoiAutocompleteUrl('dolmen','pont');
 assert.equal(poiUrl.pathname,'/geocodage/completion/','endpoint POI autocomplete');
