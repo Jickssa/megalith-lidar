@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "1.3",
+  "schemaVersion": "1.4",
   "categories": [
     {
       "id": "megaliths",
@@ -24,6 +24,12 @@
             "archaeological_site": "megalith"
           }
         }
+      ],
+      "queryFields": [
+        "name",
+        "name:fr",
+        "ref",
+        "megalith_type"
       ]
     },
     {
@@ -47,6 +53,12 @@
             "megalith_type": "round_barrow"
           }
         }
+      ],
+      "queryFields": [
+        "name",
+        "name:fr",
+        "ref",
+        "megalith_type"
       ]
     },
     {
@@ -70,6 +82,12 @@
             "archaeological_site": "fortification"
           }
         }
+      ],
+      "queryFields": [
+        "name",
+        "name:fr",
+        "ref",
+        "fortification_type"
       ]
     },
     {
@@ -100,6 +118,12 @@
             "historic:civilization": "ancient_roman"
           }
         }
+      ],
+      "queryFields": [
+        "name",
+        "name:fr",
+        "ref",
+        "historic:civilization"
       ]
     },
     {
@@ -126,6 +150,11 @@
             "historic": "milestone"
           }
         }
+      ],
+      "queryFields": [
+        "name",
+        "name:fr",
+        "ref"
       ]
     },
     {
@@ -155,6 +184,11 @@
             "historic": "fort"
           }
         }
+      ],
+      "queryFields": [
+        "name",
+        "name:fr",
+        "ref"
       ]
     }
   ],
