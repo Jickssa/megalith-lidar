@@ -10,8 +10,98 @@ async function getJson(url,opts={},timeout=18000){const c=new AbortController(),
 const tile=layer=>'https://data.geopf.fr/wmts?SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&LAYER='+encodeURIComponent(layer)+'&STYLE=normal&FORMAT=image/png&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}';
 function initMap(){if(!window.L)throw Error('Leaflet absent');const d=S.cfg.defaultMap;S.map=L.map('map',{center:d.center,zoom:d.zoom,minZoom:d.minZoom,maxZoom:d.maxZoom,preferCanvas:true});S.base.ign=L.tileLayer(tile('GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2'),{attribution:'© IGN — Géoplateforme'});S.base.osm=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap contributors'});S.base.ign.addTo(S.map);
 S.over.mnt=L.tileLayer(tile('IGNF_LIDAR-HD_MNT_ELEVATION.ELEVATIONGRIDCOVERAGE.SHADOW'),{opacity:.82,attribution:'© IGN — LiDAR HD'});S.over.mns=L.tileLayer(tile('IGNF_LIDAR-HD_MNS_ELEVATION.ELEVATIONGRIDCOVERAGE.SHADOW'),{opacity:.8,attribution:'© IGN — LiDAR HD'});S.over.mnh=L.tileLayer(tile('IGNF_LIDAR-HD_MNH_ELEVATION.ELEVATIONGRIDCOVERAGE.SHADOW'),{opacity:.8,attribution:'© IGN — LiDAR HD'});S.markers=L.featureGroup().addTo(S.map);S.map.on('mousemove',e=>$('cursorCoordinates').textContent=e.latlng.lat.toFixed(5)+', '+e.latlng.lng.toFixed(5));S.map.on('click',e=>S.pending=e.latlng);$('mapStatus').textContent='Plan IGN prêt — France métropolitaine'}
-function item(f,source){const p=f.properties||f,t=f.tags||{},g=f.geometry||{};let lat=f.lat??f.center?.lat??g.coordinates?.[1],lon=f.lon??f.center?.lon??g.coordinates?.[0];lat=Number(lat);lon=Number(lon);if(!Number.isFinite(lat)||!Number.isFinite(lon)||Math.abs(lat)>90||Math.abs(lon)>180)return null;return {title:p.label||p.name||p.nom||t.name||t['name:fr']||p.toponym||'Site sans nom',kind:p.category||p.type||t.historic||t.megalith_type||'Site documenté',source,lat,lon}}
-function showResults(a,source){S.results=a.filter(Boolean);S.markers.clearLayers();$('resultsList').innerHTML='';$('resultCount').textContent=S.results.length;$('resultSource').textContent=source;if(!S.results.length){$('resultsList').textContent='Aucun résultat renvoyé. Cela ne permet pas de conclure à une absence archéologique.';return}S.results.forEach((x,i)=>{const m=L.circleMarker([x.lat,x.lon],{radius:7,color:'#d5aa70',fillColor:'#d5aa70',fillOpacity:.9}).addTo(S.markers).bindPopup('<b>'+esc(x.title)+'</b><br>'+esc(x.kind)+'<br>'+esc(x.source));const d=document.createElement('article');d.className='result';d.innerHTML='<b>'+esc(x.title)+'</b><small>'+esc(x.kind)+' · '+esc(x.source)+'</small><small>'+x.lat.toFixed(5)+', '+x.lon.toFixed(5)+'</small><button type="button">Centrer</button>';d.querySelector('button').addEventListener('click',()=>{S.map.setView([x.lat,x.lon],15);m.openPopup()});$('resultsList').appendChild(d)})}
+function item(f,source){
+ const p=f.properties||f,t=f.tags||{},g=f.geometry||{};
+ let lat=f.lat??f.center?.lat??g.coordinates?.[1],lon=f.lon??f.center?.lon??g.coordinates?.[0];lat=Number(lat);lon=Number(lon);
+ if(!Number.isFinite(lat)||!Number.isFinite(lon)||Math.abs(lat)>90||Math.abs(lon)>180)return null;
+ return {id:p.id||p.id_fantoir||undefined,title:p.label||p.name||p.nom||t.name||t['name:fr']||p.toponym||'Lieu sans nom',
+  kind:p.category||p.type||'Lieu géocodé',source,lat,lon,tags:t,category:'geocoding',recordType:'geocoded-place',verification:'unverified',url:p.url||undefined,properties:p};
+}
+function normalizeResultRecord(x,index,source){
+ if(!x)return null;const lat=Number(x.lat),lon=Number(x.lon);
+ if(!Number.isFinite(lat)||!Number.isFinite(lon)||Math.abs(lat)>90||Math.abs(lon)>180)return null;
+ const externalId=x.id||((x.osmType&&x.osmId!=null)?'osm:'+x.osmType+':'+x.osmId:undefined);
+ return {id:String(externalId||'fr:result:'+index),title:String(x.title||'Site sans nom'),kind:String(x.kind||'Site documenté'),
+  source:String(x.source||source||'Source non renseignée'),lat,lon,tags:x.tags&&typeof x.tags==='object'?x.tags:{},
+  osmType:x.osmType,osmId:x.osmId,url:x.url,category:x.category||'unclassified',
+  recordType:x.recordType||'documented-object',verification:x.verification||'unverified',
+  createdAt:x.createdAt||null,properties:x.properties||null};
+}
+function observationRecord(feature,index){
+ const p=feature.properties||{},coords=feature.geometry.coordinates,key=coords.map(n=>Number(n).toFixed(6)).join(',');
+ return normalizeResultRecord({id:p.recordId||'fr:legacy-observation:'+String(p.createdAt||index)+':'+key,
+  title:p.title||'Observation de terrain',kind:p.type||'Indéterminé',source:p.source||'Observation personnelle',
+  lat:coords[1],lon:coords[0],category:p.category||'field-observation',recordType:'field-observation',
+  verification:p.verification||'unverified',createdAt:p.createdAt,properties:p},index,'Observation personnelle');
+}
+function siteRecordToFeature(r){
+ return {type:'Feature',geometry:{type:'Point',coordinates:[r.lon,r.lat]},properties:{
+  title:r.title,type:r.kind,source:r.source,recordId:r.id,category:r.category,recordType:r.recordType,
+  verification:r.verification,tags:r.tags,externalUrl:r.url||null}};
+}
+function getAllRecords(){
+ return S.results.map((x,i)=>normalizeResultRecord(x,i,S.resultSource)).filter(Boolean)
+ .concat(S.observations.map(observationRecord).filter(Boolean));
+}
+function renderCandidates(){
+ const body=$('candidateRows');if(!body)return;body.replaceChildren();
+ const q=$('candidateFilter').value.trim().toLocaleLowerCase('fr'),cat=$('candidateCategoryFilter').value,
+ src=$('candidateSourceFilter').value,verification=$('candidateVerificationFilter').value;
+ const filtered=getAllRecords().filter(r=>(!cat||r.category===cat)&&(!src||r.source===src)&&(!verification||r.verification===verification)&&
+ (!q||(r.title+' '+r.kind+' '+r.source+' '+r.id+' '+JSON.stringify(r.tags)).toLocaleLowerCase('fr').includes(q)));
+ $('candidateCount').textContent=filtered.length;
+ $('candidateTableNote').textContent=filtered.length+' résultat(s) affiché(s). Objets documentés, lieux géocodés et observations ; aucun score de détection français.';
+ if(!filtered.length){const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=5;td.textContent='Aucun élément dans ce filtre. Lance une recherche dans Carte & LiDAR ou crée une observation.';tr.append(td);body.append(tr);return;}
+ filtered.sort((x,y)=>x.title.localeCompare(y.title,'fr'));
+ for(const r of filtered){const tr=document.createElement('tr');tr.className='candidate-row';tr.dataset.recordId=r.id;
+  for(const value of [r.title,r.kind,r.source,r.verification,r.recordType]){const td=document.createElement('td');td.textContent=value;tr.append(td);}
+  tr.addEventListener('click',()=>selectRecord(r.id,{showDetails:true,centerMap:true}));body.append(tr);
+ }
+}
+function renderInspector(){
+ const root=$('inspectorContent');if(!root)return;root.replaceChildren();
+ if(!S.selectedRecordId){const p=document.createElement('p');p.className='muted';p.textContent='Sélectionne un élément dans la liste ou sur la carte pour ouvrir sa fiche.';root.append(p);return;}
+ const r=getAllRecords().find(x=>x.id===S.selectedRecordId);if(!r){S.selectedRecordId=null;renderInspector();return;}
+ const h=document.createElement('h3');h.textContent=r.title;root.append(h);
+ const p=document.createElement('p');p.textContent=r.kind+' · '+r.source;root.append(p);
+ const dl=document.createElement('dl');dl.className='site-meta';
+ for(const [label,value] of [['Identifiant',r.id],['Typologie',r.kind],['Source',r.source],['Vérification',r.verification],['Nature',r.recordType],['Catégorie',r.category],['Latitude',r.lat.toFixed(6)],['Longitude',r.lon.toFixed(6)],['CRS d’échange','EPSG:4326']]){
+  const dt=document.createElement('dt');dt.textContent=label;const dd=document.createElement('dd');dd.textContent=value;dl.append(dt,dd);}
+ root.append(dl);
+ if(r.url){const link=document.createElement('a');link.href=r.url;link.target='_blank';link.rel='noopener noreferrer';link.textContent='Ouvrir la source externe';root.append(link);}
+ if(r.tags&&Object.keys(r.tags).length){const details=document.createElement('details'),summary=document.createElement('summary'),pre=document.createElement('pre');summary.textContent='Métadonnées de la source';pre.textContent=JSON.stringify(r.tags,null,2);details.append(summary,pre);root.append(details);}
+ if(r.properties?.notes){const n=document.createElement('p');n.textContent='Notes : '+r.properties.notes;root.append(n);}
+ const actions=document.createElement('div');actions.className='inspector-actions';
+ const zoom=document.createElement('button');zoom.type='button';zoom.textContent='Centrer sur la carte';zoom.addEventListener('click',()=>{S.map.setView([r.lat,r.lon],15);showStep('map');});
+ const observe=document.createElement('button');observe.type='button';observe.textContent='Ajouter au carnet';observe.addEventListener('click',()=>{S.pending={lat:r.lat,lng:r.lon};$('observationTitle').value=r.title;$('observationNotes').value='Référence : '+r.id;$('observationType').value='indetermine';$('observationDialog').showModal();});
+ actions.append(zoom,observe);root.append(actions);
+}
+function selectRecord(id,{showDetails=false,centerMap=false}={}){
+ const r=getAllRecords().find(x=>x.id===id);if(!r)return false;S.selectedRecordId=r.id;
+ if(centerMap&&S.map)S.map.setView([r.lat,r.lon],15);
+ renderCandidates();renderInspector();const marker=S.markers?.getLayers?.().find(layer=>layer.options?.recordId===r.id);
+ if(marker&&centerMap)marker.openPopup();if(showDetails)showStep('details');return true;
+}
+function showStep(step){
+ const ids={map:'stepMap',list:'stepList',details:'stepDetails'};
+ for(const [name,id] of Object.entries(ids)){const panel=$(id),tab=$('tab-'+name);panel.hidden=name!==step;tab.classList.toggle('active',name===step);tab.setAttribute('aria-selected',String(name===step));}
+ S.activeStep=step;if(step==='map'&&S.map)requestAnimationFrame(()=>S.map.invalidateSize());if(step==='list')renderCandidates();if(step==='details')renderInspector();
+}
+function showResults(results,source){
+ S.results=results.filter(Boolean);S.resultSource=source;S.markers.clearLayers();$('resultsList').replaceChildren();
+ $('resultCount').textContent=S.results.length;$('resultSource').textContent=source;
+ if(!S.results.length){$('resultsList').textContent='Aucun résultat renvoyé. Cela ne permet pas de conclure à une absence archéologique.';renderCandidates();renderInspector();return;}
+ S.results.forEach((x,index)=>{const r=normalizeResultRecord(x,index,source);if(!r)return;
+  const marker=L.circleMarker([r.lat,r.lon],{radius:6,color:'#b87926',fillColor:'#d97706',fillOpacity:.74,weight:2});
+  marker.options.recordId=r.id;marker.bindPopup('<b>'+esc(r.title)+'</b><br>'+esc(r.kind)+'<br>'+esc(r.source));marker.on('click',()=>selectRecord(r.id,{showDetails:true}));marker.addTo(S.markers);
+  const card=document.createElement('article');card.className='result';card.dataset.recordId=r.id;
+  const h=document.createElement('b');h.textContent=r.title;const detail=document.createElement('small');detail.textContent=r.kind+' · '+r.source;
+  const coords=document.createElement('small');coords.textContent=r.lat.toFixed(5)+', '+r.lon.toFixed(5);
+  const inspect=document.createElement('button');inspect.type='button';inspect.textContent='Inspecter';inspect.addEventListener('click',()=>selectRecord(r.id,{showDetails:true,centerMap:true}));
+  card.append(h,detail,coords,inspect);$('resultsList').append(card);
+ });
+ renderCandidates();renderInspector();
+}
 function normalizeTaxonomy(taxonomy){
  const categories=Array.isArray(taxonomy?.categories)?taxonomy.categories:[];
  const seen=new Set();
@@ -105,7 +195,7 @@ function osmElementToItem(feature,source='OpenStreetMap'){
  if(!Number.isFinite(lat)||!Number.isFinite(lon)||Math.abs(lat)>90||Math.abs(lon)>180)return null;
  const type=tags.megalith_type||tags.archaeological_site||tags.historic||tags.heritage||tags.man_made||'Site documenté';
  const title=tags.name||tags['name:fr']||tags.ref||type;
- return {id:feature.id!=null?'osm:'+feature.type+':'+feature.id:undefined,title,kind:type,source,lat,lon,tags,osmType:feature.type,osmId:feature.id,url:feature.id?'https://www.openstreetmap.org/'+feature.type+'/'+feature.id:undefined};
+ return {id:feature.id!=null?'osm:'+feature.type+':'+feature.id:undefined,title,kind:type,source,lat,lon,tags,osmType:feature.type,osmId:feature.id,url:feature.id?'https://www.openstreetmap.org/'+feature.type+'/'+feature.id:undefined,category:'unclassified',recordType:'documented-object',verification:'unverified'};
 }
 async function searchPlace(q){const u=buildPlaceSearchUrl(q);const r=await getJson(u);return (r.features||r.results||[]).map(f=>item(f,'IGN / Géoplateforme'))}
 function deduplicateOsmItems(items){
@@ -147,7 +237,7 @@ async function search(){
  $('searchButton').disabled=true;$('searchButton').textContent='Recherche…';
  $('mapStatus').textContent=mode==='osm'?'Interrogation OpenStreetMap…':'Interrogation IGN…';
  try{
-  const results=mode==='place'?await searchPlace(query):await searchOsm(category,query,controller.signal);
+  const results=mode==='place'?await searchPlace(query):(await searchOsm(category,query,controller.signal)).map(record=>({...record,category,recordType:'documented-object',verification:'unverified'}));
   if(controller.signal.aborted||searchId!==S.searchId)return;
   showResults(results,mode==='place'?'IGN — géocodage des lieux':'OSM — '+(S.taxonomy.categories.find(c=>c.id===category)?.label||category));
   $('mapStatus').textContent=results.length+' résultat(s)';
@@ -200,7 +290,7 @@ function saveObs(){
  if(S.observations.length>=getStorageLimits().maxFeatures){toast('Limite atteinte : '+getStorageLimits().maxFeatures+' observations locales maximum.');return}
  const p=S.pending||S.map.getCenter(),title=$('observationTitle').value.trim();
  if(!title)return;
- const feature={type:'Feature',geometry:{type:'Point',coordinates:[p.lng,p.lat]},properties:{title,type:$('observationType').value,notes:$('observationNotes').value,createdAt:new Date().toISOString(),source:'observation-personnelle'}};
+ const feature={type:'Feature',geometry:{type:'Point',coordinates:[p.lng,p.lat]},properties:{title,type:$('observationType').value,notes:$('observationNotes').value,createdAt:new Date().toISOString(),source:'Observation personnelle',category:'field-observation',recordType:'field-observation',verification:'unverified',recordId:'fr:observation:'+Date.now()}};
  if(!isValidObservationFeature(feature)){toast('Coordonnées du relevé invalides.');return}
  if(!persistObs([...S.observations,feature]))return;
  $('observationDialog').close();$('observationForm').reset();toast('Relevé enregistré sur cet appareil.')
@@ -224,8 +314,19 @@ async function importObs(f){
  }catch(e){toast('Import refusé : '+e.message)}
  finally{$('importGeoJson').value=''}
 }
-function events(){$('searchButton').addEventListener('click',search);$('searchInput').addEventListener('keydown',e=>{if(e.key==='Enter')search()});$('basemapSelect').addEventListener('change',e=>{Object.values(S.base).forEach(l=>S.map.removeLayer(l));S.base[e.target.value].addTo(S.map)});[['layerMnt','mnt'],['layerMns','mns'],['layerMnh','mnh']].forEach(([id,k])=>$(id).addEventListener('change',e=>e.target.checked?S.over[k].addTo(S.map):S.map.removeLayer(S.over[k])));$('locateButton').addEventListener('click',()=>{if(!navigator.geolocation)return toast('Géolocalisation indisponible');navigator.geolocation.getCurrentPosition(p=>S.map.setView([p.coords.latitude,p.coords.longitude],15),e=>toast('Position indisponible : '+e.message),{timeout:10000})});$('addObservation').addEventListener('click',addObs);$('exportObservations').addEventListener('click',exportObs);$('importGeoJson').addEventListener('change',e=>importObs(e.target.files?.[0]));$('cancelDialog').addEventListener('click',()=>$('observationDialog').close());$('observationForm').addEventListener('submit',e=>{e.preventDefault();saveObs()})}
-async function init(){try{[S.cfg,S.taxonomy]=await Promise.all([getJson(CFG),getJson('/assets/web/france/config/archaeology-taxonomy.fr.json')]);S.sources=await getJson(SRC);initMap();events();loadObs();$('mapStatus').textContent='Module prêt — requêtes à la demande'}catch(e){$('mapStatus').textContent='Initialisation impossible : '+e.message;toast('Erreur au démarrage du module France.')}}
-if(typeof module!=='undefined'&&module.exports)module.exports={getStorageLimits,isValidObservationFeature,parseObservationImport,isGeoJsonFile,getSearchSettings,buildPlaceSearchUrl,normalizeTaxonomy,escapeOverpassValue,escapeOverpassRegex,buildOverpassTagSelector,queryBoxFromBounds,buildOverpassQuery,osmElementToItem,deduplicateOsmItems,buildPoiAutocompleteUrl};
+function applyTheme(theme){const value=theme==='dark'?'dark':'light';document.documentElement.dataset.theme=value;const b=$('themeToggle');if(b)b.textContent=value==='dark'?'Thème : sombre':'Thème : cartographique';try{localStorage.setItem('monolith.ui.theme.v1',value)}catch(_e){}}
+function events(){
+ $('tab-map').addEventListener('click',()=>showStep('map'));$('tab-list').addEventListener('click',()=>showStep('list'));$('tab-details').addEventListener('click',()=>showStep('details'));
+ $('candidateFilter').addEventListener('input',renderCandidates);['candidateCategoryFilter','candidateSourceFilter','candidateVerificationFilter'].forEach(id=>$(id).addEventListener('change',renderCandidates));
+ $('searchButton').addEventListener('click',search);$('searchInput').addEventListener('keydown',e=>{if(e.key==='Enter')search()});
+ $('basemapSelect').addEventListener('change',e=>{Object.values(S.base).forEach(l=>S.map.removeLayer(l));S.base[e.target.value].addTo(S.map)});
+ [['layerMnt','mnt'],['layerMns','mns'],['layerMnh','mnh']].forEach(([id,k])=>$(id).addEventListener('change',e=>e.target.checked?S.over[k].addTo(S.map):S.map.removeLayer(S.over[k])));
+ $('locateButton').addEventListener('click',()=>{if(!navigator.geolocation)return toast('Géolocalisation indisponible');navigator.geolocation.getCurrentPosition(p=>S.map.setView([p.coords.latitude,p.coords.longitude],15),e=>toast('Position indisponible : '+e.message),{timeout:10000})});
+ $('themeToggle').addEventListener('click',()=>applyTheme(document.documentElement.dataset.theme==='dark'?'light':'dark'));
+ $('addObservation').addEventListener('click',addObs);$('exportObservations').addEventListener('click',exportObs);$('importGeoJson').addEventListener('change',e=>importObs(e.target.files?.[0]));
+ $('cancelDialog').addEventListener('click',()=>$('observationDialog').close());$('observationForm').addEventListener('submit',e=>{e.preventDefault();saveObs()});
+}
+async function init(){try{[S.cfg,S.taxonomy]=await Promise.all([getJson(CFG),getJson('/assets/web/france/config/archaeology-taxonomy.fr.json')]);S.sources=await getJson(SRC);initMap();events();loadObs();let theme='light';try{theme=localStorage.getItem('monolith.ui.theme.v1')||'light'}catch(_e){}applyTheme(theme);renderCandidates();renderInspector();showStep('map');$('mapStatus').textContent='Module prêt — recherches à la demande'}catch(e){$('mapStatus').textContent='Initialisation impossible : '+e.message;toast('Erreur au démarrage du module France.')}}
+if(typeof module!=='undefined'&&module.exports)module.exports={getStorageLimits,isValidObservationFeature,parseObservationImport,isGeoJsonFile,getSearchSettings,buildPlaceSearchUrl,normalizeTaxonomy,escapeOverpassValue,escapeOverpassRegex,buildOverpassTagSelector,queryBoxFromBounds,buildOverpassQuery,osmElementToItem,deduplicateOsmItems,buildPoiAutocompleteUrl,normalizeResultRecord,siteRecordToFeature};
 if(typeof document!=='undefined')document.addEventListener('DOMContentLoaded',init);
 })();

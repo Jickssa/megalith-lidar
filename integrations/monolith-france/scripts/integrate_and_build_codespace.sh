@@ -18,9 +18,10 @@ command -v node >/dev/null || { echo "Node.js requis" >&2; exit 3; }
 VENV_DIR="${TMPDIR:-/tmp}/monolith-france-build-venv"
 python3 -m venv "$VENV_DIR"
 PYTHON="$VENV_DIR/bin/python"
-"$PYTHON" -m pip install --disable-pip-version-check "Pillow>=10,<13"
+"$PYTHON" -m pip install --disable-pip-version-check "Pillow>=10,<13" "jsonschema>=4.22,<5"
 "$PYTHON" "$PACKAGE_ROOT/scripts/validate_package.py"
 node --check "$PACKAGE_ROOT/web/app.js"
+node "$PACKAGE_ROOT/scripts/test_web_logic.js"
 "$PYTHON" -m py_compile "$PACKAGE_ROOT"/scripts/*.py
 "$PYTHON" "$PACKAGE_ROOT/scripts/test_android_installer.py"
 

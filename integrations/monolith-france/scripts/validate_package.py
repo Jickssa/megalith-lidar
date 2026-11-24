@@ -297,6 +297,11 @@ def main() -> int:
                 ERRORS.append(f"Contrôle Android de sécurité absent : {native_contract}")
     else:
         ERRORS.append("MainActivity.kt introuvable : contrôle du pont Android impossible.")
+
+    for ui_contract in ("stepMap","stepList","stepDetails","tab-map","tab-list","tab-details","candidateRows","candidateFilter","candidateCategoryFilter","candidateSourceFilter","candidateVerificationFilter","inspectorContent","observationList","themeToggle"):
+        if ui_contract not in html: ERRORS.append(f"Interface France STEP 1–3 : contrat absent {ui_contract}.")
+    for ui_contract in ("function showStep","function renderCandidates","function renderInspector","function selectRecord","function normalizeResultRecord","function siteRecordToFeature","function applyTheme"):
+        if ui_contract not in js: ERRORS.append(f"Logique France STEP 1–3 : contrat absent {ui_contract}.")
     if ERRORS:
         print("VALIDATION ÉCHOUÉE")
         print("\n".join(f"- {error}" for error in ERRORS))

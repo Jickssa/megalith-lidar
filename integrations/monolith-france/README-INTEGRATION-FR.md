@@ -1,13 +1,13 @@
 # Monolith France — module cartographique LiDAR & archéologie
 
-**Version du paquet :** 1.3.1  
+**Version du paquet :** 2.0.0  
 **Langue / territoire initial :** français / France métropolitaine  
 **Cible :** intégration dans une APK Android hôte nommée « Monolith » via `WebViewAssetLoader`.
 
-Ce module fournit une interface cartographique mobile, des couches IGN LiDAR HD, le géocodage de lieux/adresses par la Géoplateforme, la recherche OSM à l'échelle de l'emprise courante et un carnet de prospection local importable/exportable en GeoJSON. La recherche OSM s'appuie sur une taxonomie française de six familles, des conjonctions de tags documentées et des champs de recherche définis par catégorie (noms, références et sous-types). Les requêtes sont limitées à l'emprise courante et les résultats OSM sont dédupliqués. La recherche POI IGN utilise le service d'autocomplétion distinct ; elle reste non activée tant que le type issu de GetCapabilities et son comportement réel ne sont pas validés.
+Ce module fournit une interface territoriale organisée en trois espaces — Carte & LiDAR, Liste des candidats et Détails du site — avec sélection synchronisée entre carte, tableau et inspecteur. Il fournit une interface cartographique mobile, des couches IGN LiDAR HD, le géocodage de lieux/adresses par la Géoplateforme, la recherche OSM à l'échelle de l'emprise courante et un carnet de prospection local importable/exportable en GeoJSON. La recherche OSM s'appuie sur une taxonomie française de six familles, des conjonctions de tags documentées et des champs de recherche définis par catégorie (noms, références et sous-types). Les requêtes sont limitées à l'emprise courante et les résultats OSM sont dédupliqués. La recherche POI IGN utilise le service d'autocomplétion distinct ; elle reste non activée tant que le type issu de GetCapabilities et son comportement réel ne sont pas validés.
 
 ## Contenu
-- `web/` : interface, carte Leaflet, recherche IGN / OSM et carnet de terrain.
+- `web/` : interface France STEP 1–3, carte Leaflet, recherche IGN / OSM, liste de candidats, inspecteur et carnet de terrain.
 - `config/` : territoire par défaut, sources cartographiques et typologie archéologique.
 - `android/` : fragments Kotlin/XML à fusionner dans l'Activity hôte, sans créer une seconde Activity.
 - `scripts/` : installateurs Android, validation du paquet et procédure de build Codespaces.

@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "module": "monolith-france",
-  "version": "1.3.1",
+  "version": "2.0.0",
   "branch": "feature/monolith-international-next",
-  "note": "1.3.1 refines French archaeological OSM search with compound documented tag rules, category-specific name/reference/subtype fields, deduplication and literal regex escaping. The international country/language selector, contributor country profiles, full France STEP 1–3 parity, live IGN POI type discovery, live network validation and physical Android testing remain planned."
+  "note": "The France atlas has three UI steps (Map & LiDAR, Candidates List, Site Details), synchronized result/map/inspector selection, searchable candidate records and integrated field notebook. French data, sources and scientific capabilities remain independent of UK. Live IGN POI validation, live network validation and physical Android testing remain pending."
 }

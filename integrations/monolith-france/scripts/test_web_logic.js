@@ -1,6 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict');
-const {getStorageLimits,isValidObservationFeature,parseObservationImport,isGeoJsonFile,getSearchSettings,buildPlaceSearchUrl,normalizeTaxonomy,escapeOverpassValue,escapeOverpassRegex,buildOverpassTagSelector,queryBoxFromBounds,buildOverpassQuery,osmElementToItem,deduplicateOsmItems,buildPoiAutocompleteUrl}=require('../web/app.js');
+const {getStorageLimits,isValidObservationFeature,parseObservationImport,isGeoJsonFile,getSearchSettings,buildPlaceSearchUrl,normalizeTaxonomy,escapeOverpassValue,escapeOverpassRegex,buildOverpassTagSelector,queryBoxFromBounds,buildOverpassQuery,osmElementToItem,deduplicateOsmItems,buildPoiAutocompleteUrl,normalizeResultRecord,siteRecordToFeature}=require('../web/app.js');
 const point=(lon,lat,properties={title:'test'})=>({type:'Feature',geometry:{type:'Point',coordinates:[lon,lat]},properties});
 
 assert.equal(isValidObservationFeature(point(2.35,48.86)),true,'coordonnées WGS84 valides');
@@ -81,3 +81,6 @@ assert.equal(poiUrl.searchParams.get('poiType'),'pont','poiType transmis uniquem
 assert.equal(poiUrl.searchParams.get('terr'),'METROPOLE','périmètre territorial');
 assert.throws(()=>buildPoiAutocompleteUrl('dolmen',''),/GetCapabilities/);
 console.log('PASS — taxonomie, Overpass QL, géométrie OSM, filtre utilisateur et endpoint POI.');
+
+const r=normalizeResultRecord({id:'osm:node:7',title:'Dolmen test',kind:'megalith',source:'OpenStreetMap',lat:47.2,lon:0.2,tags:{historic:'archaeological_site'},category:'megaliths',verification:'unverified'},0,'OSM');
+assert.equal(r.id,'osm:node:7');assert.equal(r.verification,'unverified');assert.deepEqual(siteRecordToFeature(r).geometry.coordinates,[0.2,47.2]);assert.equal(normalizeResultRecord({title:'invalid',lat:95,lon:0},1,'IGN'),null);console.log('PASS — modèle commun de candidat.');

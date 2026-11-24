@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.0.0 — harmonisation France STEP 1–3
+
+- Interface française organisée en trois espaces : Carte & LiDAR, Liste des candidats et Détails du site.
+- Modèle de candidat commun aux résultats IGN/OSM et observations locales, sans score archéologique inventé.
+- Sélection synchronisée entre liste, carte et inspecteur ; carnet GeoJSON intégré à l'espace Détails du site.
+- Design cartographique clair inspiré du langage visuel britannique et thème sombre mémorisé localement.
+- Script Codespaces complété par jsonschema et les tests JavaScript.
+
 ## 1.3.2 — sélecteur international et validation des profils
 
 - Interface initiale du sélecteur commun localisée en français avec le titre « Choisir un atlas ».
@@ -15,7 +23,6 @@
 - Les tags ambigus ou non archéologiques (`highway=track`, `man_made=cairn` générique) ne sont plus injectés automatiquement dans les familles archéologiques.
 - Double échappement des valeurs regex et des chaînes Overpass.
 
-## 1.3.0 — recherche archéologique française et CI
 ## 1.3.0 — recherche archéologique française et CI
 
 - La taxonomie française pilote maintenant six familles de recherche OSM : mégalithes, tumulus, enceintes, sites romains, voies anciennes et patrimoine médiéval.
