@@ -110,7 +110,7 @@ def main() -> int:
                 if not isinstance(code, str) or not isinstance(locales, list) or not locales or len(locales) != len(set(locales)):
                     ERRORS.append(f"Catalogue {code!r} : langues déclarées invalides ou dupliquées.")
                     continue
-                if not isinstance(profile_rel, str) or not re.fullmatch(r"profiles/[A-Z]{2,3}\\.json", profile_rel):
+                if not isinstance(profile_rel, str) or not re.fullmatch(r"profiles/[A-Z]{2,3}\.json", profile_rel):
                     ERRORS.append(f"Catalogue {code} : chemin de profil invalide.")
                     continue
                 profile_path = (country_root / profile_rel).resolve()
