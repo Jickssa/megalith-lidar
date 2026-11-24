@@ -176,10 +176,16 @@ if __name__ == "__main__":
         subprocess.run([sys.executable, str(prepare)], check=True)
         assets = repo / "android/app/src/main/assets/web"
         home = (assets / "atlas-home.html").read_text(encoding="utf-8")
-        assert "Choisir un atlas" in home
-        assert 'href="/assets/web/france/web/index.html"' in home
-        assert 'href="/assets/web/index.html"' in home
-        assert "Atlas UK" in home and "Ouvrir l’Atlas UK" in home
+        assert 'lang="fr"' in home
+        assert "<title>Monolith International — Choisir un atlas</title>" in home
+        assert "<h1 id=\"pageTitle\">Choisir un atlas</h1>" in home
+        assert "Sélectionne un pays et une langue disponibles." in home
+        assert 'href="/assets/web/france/web/index.html"' not in home
+        assert 'href="/assets/web/index.html"' not in home
+        assert "atlas-home.html" in home and "countrySelect" in home and "languageSelect" in home
+        assert "allowedAtlasRoutes={FR:'/assets/web/france/web/index.html',GB:'/assets/web/index.html'}" in home
+        assert "/assets/web/france-home.html" not in home
+        assert "/assets/web/uk-home.html" not in home
         assert "/assets/web/france-home.html" not in home
         assert "/assets/web/uk-home.html" not in home
 

@@ -81,6 +81,76 @@ def main() -> int:
         if layer not in source_text:
             ERRORS.append(f"Couche de données absente : {layer}")
 
+    # Validate only explicitly declared territory/language combinations.
+    try:
+        from jsonschema import validate
+        from jsonschema.exceptions import ValidationError
+    except ImportError:
+        ERRORS.append("jsonschema absent : impossible de valider les profils pays.")
+    else:
+        country_root = ROOT / "config/countries"
+        schema_path = country_root / "country-profile.schema.json"
+        catalog_path = country_root / "catalog.json"
+        try:
+            schema = json.loads(schema_path.read_text(encoding="utf-8"))
+            catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
+            country_entries = catalog.get("countries", [])
+            active = [entry for entry in country_entries if entry.get("status") == "active"]
+            active_codes = {entry.get("code") for entry in active}
+            if catalog.get("defaultCountry") not in active_codes:
+                ERRORS.append("Le pays par défaut doit être déclaré actif dans le catalogue.")
+            if active_codes != {"FR", "GB"}:
+                ERRORS.append("Seuls FR et GB peuvent être actifs tant qu'aucun autre profil n'est validé.")
+            if len(active_codes) != len(active):
+                ERRORS.append("Codes pays actifs dupliqués.")
+            for entry in active:
+                code = entry.get("code")
+                locales = entry.get("supportedLanguages")
+                profile_rel = entry.get("profile")
+                if not isinstance(code, str) or not isinstance(locales, list) or not locales or len(locales) != len(set(locales)):
+                    ERRORS.append(f"Catalogue {code!r} : langues déclarées invalides ou dupliquées.")
+                    continue
+                if not isinstance(profile_rel, str) or not re.fullmatch(r"profiles/[A-Z]{2,3}\\.json", profile_rel):
+                    ERRORS.append(f"Catalogue {code} : chemin de profil invalide.")
+                    continue
+                profile_path = (country_root / profile_rel).resolve()
+                if country_root.resolve() not in profile_path.parents or not profile_path.is_file():
+                    ERRORS.append(f"Catalogue {code} : profil absent ou hors du répertoire autorisé.")
+                    continue
+                profile = json.loads(profile_path.read_text(encoding="utf-8"))
+                try:
+                    validate(instance=profile, schema=schema)
+                except ValidationError as exc:
+                    ERRORS.append(f"Profil {code} hors schéma : {exc.message}")
+                if profile.get("countryCode") != code or profile.get("status") != "active":
+                    ERRORS.append(f"Profil {code} : code ou statut incohérent.")
+                if profile.get("supportedLocales") != locales:
+                    ERRORS.append(f"Profil {code} : supportedLocales diffère du catalogue.")
+                if profile.get("defaultLocale") not in locales:
+                    ERRORS.append(f"Profil {code} : langue par défaut non déclarée.")
+                routes = {"FR": "/assets/web/france/web/index.html", "GB": "/assets/web/index.html"}
+                if profile.get("atlasEntry") != routes.get(code):
+                    ERRORS.append(f"Profil {code} : route Atlas absente ou non autorisée.")
+                for locale in locales:
+                    if not isinstance(locale, str) or not re.fullmatch(r"[a-z]{2}-[A-Z]{2}", locale):
+                        ERRORS.append(f"Profil {code} : identifiant de langue invalide.")
+                        continue
+                    language_path = ROOT / "config/languages" / (locale + ".json")
+                    if not language_path.is_file():
+                        ERRORS.append(f"Langue absente pour {code} : {locale}.")
+                        continue
+                    language = json.loads(language_path.read_text(encoding="utf-8"))
+                    if language.get("locale") != locale or not language.get("nativeName"):
+                        ERRORS.append(f"Catalogue de langue incohérent : {locale}.")
+                    if not isinstance(language.get("messages"), dict) or not language["messages"]:
+                        ERRORS.append(f"Catalogue de langue vide : {locale}.")
+            expected_language_pairs = {("FR", "fr-FR"), ("GB", "en-GB")}
+            actual_language_pairs = {(entry.get("code"), locale) for entry in active for locale in entry.get("supportedLanguages", [])}
+            if actual_language_pairs != expected_language_pairs:
+                ERRORS.append("Combinaisons pays/langue actives différentes du catalogue testé FR/GB.")
+        except (OSError, json.JSONDecodeError, KeyError, TypeError) as exc:
+            ERRORS.append(f"Catalogue/profils pays illisibles ou incomplets : {exc}")
+
     # Assert every internal URL used in HTML is present in the known runtime layout.
     for required in (
         "/assets/web/leaflet/leaflet.css",

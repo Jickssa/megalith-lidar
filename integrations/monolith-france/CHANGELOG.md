@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.3.2 — sélecteur international et validation des profils
+
+- Interface initiale du sélecteur commun localisée en français avec le titre « Choisir un atlas ».
+- Validation stricte des routes de destination : France et Royaume-Uni pointent uniquement vers leurs Atlas respectifs.
+- Le catalogue actif est contrôlé contre le schéma des profils, les fichiers de langue et les seules combinaisons déclarées FR/fr-FR et GB/en-GB.
+- La fixture distingue explicitement le sélecteur, les deux pages territoriales et les deux véritables Atlas.
+
 ## 1.3.1 — précision de la recherche OSM
 
 - Règles archéologiques OSM affinées avec des conjonctions documentées, notamment `historic=archaeological_site` + `archaeological_site=megalith`.

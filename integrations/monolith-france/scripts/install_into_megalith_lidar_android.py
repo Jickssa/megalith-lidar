@@ -52,7 +52,7 @@ def build_atlas_home() -> str:
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#17252b">
-<title>Monolith International — Country & Language</title>
+<title>Monolith International — Choisir un atlas</title>
 <style>
 :root{color-scheme:dark;--bg:#101a20;--panel:#1b2b32;--line:#36515c;--text:#edf4f4;--muted:#b5c6c9;--gold:#d5aa70;--blue:#7cc6e5}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:radial-gradient(ellipse at 50% -10%,#2d4851 0,#101a20 65%);color:var(--text)}
@@ -76,20 +76,20 @@ button:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid var(
 </style>
 </head>
 <body>
-<header><div class="brand">MONOLITH · INTERNATIONAL</div><h1 id="pageTitle">Choose your territory</h1><p class="subtitle" id="pageSubtitle">Select a supported country and an available interface language. The application will open directly in that territory.</p></header>
+<header><div class="brand">MONOLITH · INTERNATIONAL</div><h1 id="pageTitle">Choisir un atlas</h1><p class="subtitle" id="pageSubtitle">Sélectionne un pays et une langue disponibles. Le sélecteur ouvre directement l’un des atlas cartographiques pris en charge.</p></header>
 <main><section class="panel" aria-labelledby="pageTitle">
-<label for="countrySelect" id="countryLabel">Country / territory</label>
-<select id="countrySelect" disabled><option>Loading…</option></select>
-<label for="languageSelect" id="languageLabel">Interface language</label>
-<select id="languageSelect" disabled><option>Loading…</option></select>
-<p class="note" id="languageNote">Only languages actually available for each country are offered.</p>
-<div class="profile" id="profileInfo"><strong>Loading country profiles…</strong><p id="profileText"></p></div>
-<label class="remember"><input id="rememberPreference" type="checkbox" checked><span id="rememberLabel">Remember my choice on this device</span></label>
-<button type="button" id="openAtlas" disabled>Open application</button>
-<a class="community" href="/assets/web/community-countries.html" id="communityLink">Contribute a country ↗</a>
+<label for="countrySelect" id="countryLabel">Pays / territoire</label>
+<select id="countrySelect" disabled><option>Chargement…</option></select>
+<label for="languageSelect" id="languageLabel">Langue de l’interface</label>
+<select id="languageSelect" disabled><option>Chargement…</option></select>
+<p class="note" id="languageNote">Seules les langues déclarées disponibles pour le pays sélectionné sont proposées.</p>
+<div class="profile" id="profileInfo"><strong>Chargement des profils territoriaux…</strong><p id="profileText"></p></div>
+<label class="remember"><input id="rememberPreference" type="checkbox" checked><span id="rememberLabel">Mémoriser mon choix sur cet appareil</span></label>
+<button type="button" id="openAtlas" disabled>Ouvrir l’atlas</button>
+<a class="community" href="/assets/web/community-countries.html" id="communityLink">Contribuer à un nouveau pays ↗</a>
 <div id="status" role="status" aria-live="polite"></div>
 </section></main>
-<footer>Monolith · International archaeological landscape exploration</footer>
+<footer>Monolith International · exploration cartographique du patrimoine</footer>
 <script>
 (()=>{
 'use strict';
@@ -103,14 +103,14 @@ function applyLanguage(locale){
  selectedLanguage=locale;
  const m=languages.get(locale)?.messages||{};
  document.documentElement.lang=locale;
- $('countryLabel').textContent=m.selectCountry||'Country / territory';
- $('languageLabel').textContent=m.selectLanguage||'Interface language';
- $('languageNote').textContent=m.countryLanguageNote||'Only supported languages are listed.';
- $('rememberLabel').textContent=m.remember||'Remember my choice';
- $('openAtlas').textContent=m.open||'Open application';
- $('communityLink').textContent=(m.community||'Contribute a country')+' ↗';
+ $('countryLabel').textContent=m.selectCountry||'Pays / territoire';
+ $('languageLabel').textContent=m.selectLanguage||'Langue de l’interface';
+ $('languageNote').textContent=m.countryLanguageNote||'Seules les langues prises en charge sont proposées.';
+ $('rememberLabel').textContent=m.remember||'Mémoriser mon choix';
+ $('openAtlas').textContent=m.open||'Ouvrir l’atlas';
+ $('communityLink').textContent=(m.community||'Contribuer à un nouveau pays')+' ↗';
  $('communityLink').href='/assets/web/community-countries.html?lang='+encodeURIComponent(locale);
- $('pageTitle').textContent=m.appName==='Monolith'?'Monolith — '+(m.selectCountry||'Country'):'Monolith International';
+ $('pageTitle').textContent='Choisir un atlas';
 }
 function profileName(profile,locale){
  return profile?.name?.[locale]||profile?.name?.[profile?.defaultLocale]||profile?.countryCode||'Unknown';
@@ -138,8 +138,8 @@ async function loadProfile(code,preferredLocale){
  selectedLanguage=locales.includes(preferredLocale)?preferredLocale:profile.defaultLocale;
  if(!locales.includes(selectedLanguage))selectedLanguage=locales[0];
  $('languageSelect').value=selectedLanguage;applyLanguage(selectedLanguage);
- $('profileInfo').querySelector('strong').textContent=profileName(profile,selectedLanguage)+' · '+(profile.capabilities?.archaeologicalSearch||'Country profile');
- $('profileText').textContent=(profile.status==='active'?'Supported territory profile':'Community profile')+' · '+profile.coordinateReferenceSystem+' · '+profile.sources.length+' declared data sources';
+ $('profileInfo').querySelector('strong').textContent=profileName(profile,selectedLanguage)+' · '+(profile.capabilities?.archaeologicalSearch||'Profil territorial');
+ $('profileText').textContent=(profile.status==='active'?'Profil territorial actif':'Profil communautaire')+' · '+profile.coordinateReferenceSystem+' · '+profile.sources.length+' source(s) déclarée(s)';
  $('openAtlas').disabled=false;
 }
 async function openSelected(){
@@ -148,9 +148,14 @@ async function openSelected(){
  if(!entry||!entry.supportedLanguages.includes(selectedLanguage)||!selectedProfile.supportedLocales.includes(selectedLanguage)){
   $('status').textContent=message('unsupported','This combination is unavailable.');return;
  }
+ const allowedAtlasRoutes={FR:'/assets/web/france/web/index.html',GB:'/assets/web/index.html'};
+ const expectedTarget=allowedAtlasRoutes[selectedProfile.countryCode];
  const target=selectedProfile.atlasEntry;
- if(typeof target!=='string'||!target.startsWith('/assets/web/')||target.includes('..')){
-  $('status').textContent='Profile entry route is invalid.';return;
+ if(!entry||entry.status!=='active'||!expectedTarget||entry.profile!==('profiles/'+selectedProfile.countryCode+'.json')||
+    !entry.supportedLanguages.includes(selectedLanguage)||
+    !selectedProfile.supportedLocales.includes(selectedLanguage)||
+    target!==expectedTarget||!target.startsWith('/assets/web/')){
+  $('status').textContent=message('unsupported','Cette combinaison pays/langue ou cette destination n’est pas autorisée.');return;
  }
  if($('rememberPreference').checked){
   localStorage.setItem(PREF,JSON.stringify({countryCode:selectedProfile.countryCode,locale:selectedLanguage}));
@@ -172,7 +177,7 @@ async function init(){
   $('openAtlas').addEventListener('click',openSelected);
  }catch(e){showError(e)}
 }
-function showError(error){$('status').textContent='Unable to load country profile: '+error.message;$('openAtlas').disabled=true}
+function showError(error){$('status').textContent='Impossible de charger le profil territorial : '+error.message;$('openAtlas').disabled=true}
 document.addEventListener('DOMContentLoaded',init);
 })();
 </script>
