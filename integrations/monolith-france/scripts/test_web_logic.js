@@ -84,3 +84,5 @@ console.log('PASS — taxonomie, Overpass QL, géométrie OSM, filtre utilisateu
 
 const r=normalizeResultRecord({id:'osm:node:7',title:'Dolmen test',kind:'megalith',source:'OpenStreetMap',lat:47.2,lon:0.2,tags:{historic:'archaeological_site'},category:'megaliths',verification:'unverified'},0,'OSM');
 assert.equal(r.id,'osm:node:7');assert.equal(r.verification,'unverified');assert.deepEqual(siteRecordToFeature(r).geometry.coordinates,[0.2,47.2]);assert.equal(normalizeResultRecord({title:'invalid',lat:95,lon:0},1,'IGN'),null);console.log('PASS — modèle commun de candidat.');
+
+assert.equal(record.category,'megaliths','catégorie territoriale conservée pour le filtre STEP 1');
