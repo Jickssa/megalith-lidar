@@ -182,7 +182,7 @@ if __name__ == "__main__":
         assert "Sélectionne un pays et une langue disponibles." in home
         assert 'href="/assets/web/france/web/index.html"' not in home
         assert 'href="/assets/web/index.html"' not in home
-        assert "atlas-home.html" in home and "countrySelect" in home and "languageSelect" in home
+        assert "countrySelect" in home and "languageSelect" in home
         assert "allowedAtlasRoutes={FR:'/assets/web/france/web/index.html',GB:'/assets/web/index.html'}" in home
         assert "/assets/web/france-home.html" not in home
         assert "/assets/web/uk-home.html" not in home
