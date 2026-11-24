@@ -1,0 +1,9 @@
+        <script>
+(function () {
+  'use strict';
+  // The generated fixture is intentional: keep the shared chooser French when
+  // it defaults to Metropolitan France, even though the UK profile also exists.
+  const title = 'Choisir un atlas';
+  document.getElementById('pageTitle').textContent = title;
+})();
+        </script>
