@@ -1,45 +1,56 @@
-# Validation 1.3.1 — recherche française, sources et CI
+# Validation et recette — Monolith International
 
-## Recherche OSM implémentée
+## CI et construction Android
 
-- Six familles taxonomiques, chacune avec règles tag et champs de texte configurés.
-- Règles composées multi-tags afin d'éviter qu'un tag générique renvoie tous les sites archéologiques.
-- Requêtes par emprise actuelle, déclinées pour nodes, ways et relations.
-- Texte appliqué aux noms, noms français, références et sous-types par catégorie.
-- Regex utilisateur échappées avant encodage de la chaîne Overpass.
-- Résultats normalisés avec coordonnées, type/ID OSM et URL source.
-- Déduplication par identifiant stable.
-- Emprise excessive refusée, requêtes antérieures annulées et réponses périmées ignorées.
+L’exécution de référence est le run [45316298442](https://github.com/Jickssa/megalith-lidar/actions/runs/45316298442), commit `db2a542a683f11fc15bb47f294726ed8ac63fff6`, branche `feature/monolith-international-next`.
 
-## Sources OSM vérifiées
+- Validation statique et fixture installateur : succès.
+- Validation du paquet et profils pays/langue via `country-profile.schema.json` : succès.
+- Vérification syntaxique JavaScript : succès.
+- Tests de logique Web : succès.
+- Compilation syntaxique Python : succès.
+- Fixture installateur Android : succès.
+- Compilation Debug Android avec JDK 17 / SDK 35 : succès.
+- Contrôle des CRC ZIP et des assets internationaux requis : succès.
+- `zipalign -c -v 4` : succès.
+- `apksigner verify --verbose` : succès.
+- Upload de l’APK Debug et du checksum : succès.
 
-- `archaeological_site=megalith` requiert `historic=archaeological_site` ; combinaisons utiles : `name=*`, `megalith_type=*`.
-- `archaeological_site=roman_villa` et `archaeological_site=fortification` sont également documentés comme sous-types de `historic=archaeological_site`.
-- `man_made=cairn` peut identifier des cairns de repérage, pas nécessairement des structures archéologiques ; ce tag est donc exclu des familles automatiques.
-- Les résultats OSM restent des données contributives, à recouper avec les sources patrimoniales et les données de terrain.
+Artefact CI : [megalith-lidar-france-debug](https://github.com/Jickssa/megalith-lidar/actions/runs/45316298442/artifacts/14884244756), ID `14884244756`. Taille de l’archive : 18 997 547 octets. Digest d’archive GitHub : `sha256:5715b76917673844cd76e2346089625e11a6c7bc3c9012af4e884c00ff5f3fa3`. Ce digest est celui de l’archive d’artefact, pas le SHA-256 recalculé du fichier APK interne.
 
-Sources :
-- https://wiki.openstreetmap.org/wiki/Tag:archaeological_site%3Dmegalith
-- https://wiki.openstreetmap.org/wiki/Tag:archaeological_site%3Droman_villa
-- https://wiki.openstreetmap.org/wiki/Tag:archaeological_site%3Dfortification
-- https://wiki.openstreetmap.org/wiki/Tag:historic%3Darchaeological_site
-- https://wiki.openstreetmap.org/wiki/Tag:man_made%3Dcairn
+## Navigation et profils
 
-## IGN
+Architecture conservée :
 
-- Géocodage direct et POI autocomplete restent séparés.
-- L'autocomplétion POI utilise `/geocodage/completion/`; le `poiType` doit provenir de GetCapabilities.
-- L'activation live du POI mégalithe n'est pas déclarée tant que le schéma n'est pas interrogé et testé réellement.
-- Une recherche géocodage ou POI ne constitue pas un inventaire archéologique exhaustif.
+1. Sélecteur commun : `/assets/web/atlas-home.html`.
+2. Pages de territoire : `/assets/web/france-home.html` et `/assets/web/uk-home.html`.
+3. Atlas réels : France `/assets/web/france/web/index.html`, Royaume-Uni `/assets/web/index.html`.
 
-## CI / APK
+Seules les combinaisons actives FR/fr-FR et GB/en-GB sont admises. Le profil FR ne reprend ni modèle, ni score, ni jeu de données analytique britannique. Les chemins de destination sont soumis à une liste exacte FR/GB. Les assets de profil et de langue sont embarqués dans l’application ; leur lecture passe par les chemins internes de l’AssetLoader, sans besoin d’un service distant.
 
-- Push workflow #? ID `45180531041` : succès.
-- PR workflow #? ID `45180547052` : succès à confirmer au besoin, même commit.
-- Gradle, vérifications ZIP, alignement et signature : succès.
-- APK 1.3.1 : 19 027 801 octets, 97 entrées, CRC valide.
-- SHA-256 : `1ff35b618e67a5afc559106daccd5c5d01bb6a26f066df0834aab29ea7b6ce92`.
+La fixture vérifie les deux pages de territoire séparément des Atlas réels, les liens de retour, les routes, le hook préparateur unique, la réinstallation forcée et l’immutabilité du fichier source britannique `index.html`.
 
-## Recette restante
+## Moteur France et limites scientifiques
 
-Tests réseau réels des services externes et recette sur téléphone Android non réalisés dans cet environnement. Aucune installation par-dessus l'application existante n'est recommandée avant sauvegarde et vérification de signature.
+- Taxonomie française distincte, six familles de recherche OSM avec règles de tags composées et champs de recherche.
+- Requêtes liées à l’emprise cartographique, plafonnées et annulables ; les réponses périmées sont ignorées.
+- Echappement des termes utilisateur dans les expressions régulières et dans Overpass QL.
+- Déduplication par identifiant d’objet OSM.
+- Les données OSM décrivent des objets contributifs existants et non des découvertes archéologiques certaines.
+- Les anomalies visuelles LiDAR ne sont pas classées comme découvertes.
+- Aucun modèle IA français n’est déclaré opérationnel.
+- Les services POI IGN ne sont pas activés avant validation réelle de GetCapabilities et du paramètre de type.
+
+## Recette restant à réaliser
+
+Les éléments suivants ne sont pas couverts par la CI et restent à tester :
+
+- Requêtes réseau réelles vers la Géoplateforme IGN, Overpass et WMTS.
+- Couverture/continuité des couches IGN LiDAR HD sur plusieurs emprises de référence.
+- Recette sur téléphone Android physique : WebView, AssetLoader, GPS, rotation, reprise, fonctionnement hors réseau.
+- Import/export GeoJSON réel et limites sur appareil.
+- Téléchargement des diagnostics, sélecteur de fichiers et URI internes sur versions Android cibles.
+- Compatibilité de signature avec une version déjà installée et test de mise à jour.
+- Test de contribution communautaire ; aucun installateur sécurisé de paquet pays arbitraire n’est disponible.
+
+Aucun résultat de test réseau ou physique n’est revendiqué ici.
