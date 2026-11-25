@@ -35,6 +35,15 @@ START_URL_PATTERN = re.compile(
     + r')\2'
 )
 
+def ensure_selector_start_url(activity_text: str) -> str:
+    """Return MainActivity source pinned to the International atlas chooser."""
+    matches = list(START_URL_PATTERN.finditer(activity_text))
+    if len(matches) != 1:
+        if activity_text.count(START_URL) == 1 and not matches:
+            return activity_text
+        raise RuntimeError("Expected exactly one recognized MainActivity START_URL declaration.")
+    return START_URL_PATTERN.sub(lambda match: match.group(1) + '"' + START_URL + '"', activity_text, count=1)
+
 
 FILE_CHOOSER_CATCH_OLD = """                } catch (_: ActivityNotFoundException) {
                     fileUploadCallback = null
@@ -479,6 +488,8 @@ def main() -> int:
     if 'inputs.file(File(rootRepoDir, "scripts/prepare_android_assets.py"))' not in gradle_text:
         raise RuntimeError("Gradle prepareWebAssets task not recognized.")
 
+    # Validate that the source URL is one of the known legacy/current routes.
+    # The installer will always converge to the common atlas selector.
     if START_URL not in activity_text and not START_URL_PATTERN.search(activity_text):
         raise RuntimeError("Unexpected MainActivity START_URL; refusing to modify it.")
 
@@ -615,16 +626,10 @@ def main() -> int:
             FILE_CHOOSER_CATCH_NEW,
         )
 
-    # Change only the known upstream START_URL declaration.
+    # Always enforce the common selector as the native app's first screen.
     activity_text = activity.read_text(encoding="utf-8")
-    if START_URL not in activity_text:
-        changed, count = START_URL_PATTERN.subn(
-            lambda match: match.group(1) + '"' + START_URL + '"',
-            activity_text,
-            count=1,
-        )
-        if count != 1:
-            raise RuntimeError("Unable to update the expected START_URL declaration.")
+    changed = ensure_selector_start_url(activity_text)
+    if changed != activity_text:
         backup_once(activity, repo)
         activity.write_text(changed, encoding="utf-8")
 
