@@ -3,7 +3,7 @@
 ## Harmonisation initiale de l'Atlas France
 
 Branche : `feature/monolith-international-next`  
-Dernier HEAD de code validé : `3248ec271095194673604c05eb5c5e2793ca8b50`  
+Dernier HEAD de code validé : `96e0587490d1674075f62fb6a12caf725dd4bb11`  
 PR : [#2](https://github.com/Jickssa/megalith-lidar/pull/2) — ouverte, brouillon, non fusionnée.
 
 ### Changements intégrés
@@ -145,3 +145,24 @@ Ne pas assimiler les APK issues des deux builds distincts ni confondre l'emprein
 ## Contrats de profils territoriaux renforcés
 
 Le schéma et le validateur contrôlent désormais la forme des bornes WGS84 `[ouest, sud, est, nord]`, l'inclusion du centre de carte, l'ordre `minZoom ≤ zoom ≤ maxZoom`, la cohérence de la langue par défaut entre catalogue et profil, les noms pour les langues déclarées et l'unicité des identifiants de sources. Les tests internationaux exercent ces invariants sur FR et GB.
+
+
+## Validation finale des profils territoriaux — HEAD 96e0587
+
+Les profils France et GB ont été contrôlés sur le nouveau schéma : bornes WGS84 en ordre `[ouest, sud, est, nord]`, centre contenu dans l'emprise, niveaux de zoom ordonnés, langue par défaut cohérente entre catalogue et profil, nom traduit pour chaque langue déclarée et identifiants de sources uniques.
+
+Push : [45536902889](https://github.com/Jickssa/megalith-lidar/actions/runs/45536902889) — success.  
+PR #2 : [45536912586](https://github.com/Jickssa/megalith-lidar/actions/runs/45536912586) — success.
+
+Les deux workflows valident les tests internationaux, le paquet, le rollback installateur, la syntaxe JS/Python, la compilation Android, les assets APK, le CRC ZIP, `zipalign` et `apksigner` (signature v2).
+
+| Événement | Artefact | SHA-256 APK | Taille ZIP artefact | Expiration |
+|---|---:|---|---:|---|
+| Push | [14987695617](https://github.com/Jickssa/megalith-lidar/actions/runs/45536902889/artifacts/14987695617) | `7efa312d329a65fbad5a318ebea0a474224188eadd7ce27e00fac6f809691db9` | 19 010 702 octets | 2026-12-09 03:01 UTC |
+| PR | [14987163255](https://github.com/Jickssa/megalith-lidar/actions/runs/45536912586/artifacts/14987163255) | `806879d68e275e47f754a2f690a03fcb74f6ce00f7fdccf58853532f615b78a8` | 19 010 696 octets | 2026-12-09 03:01 UTC |
+
+SHA-256 des ZIP d'artefacts :
+- Push : `7f6e025e3b6ca6c5d5ab0e44b8eb8d6d925ad751b28058e1b861f4a2b926b505`.
+- PR : `1ecbfd790547e78681c737fcda5228982eefd12e66ef88d8792c3cec85e2b3cf`.
+
+Les APK push et PR sont issues de builds séparés ; leurs empreintes ne sont pas supposées identiques.

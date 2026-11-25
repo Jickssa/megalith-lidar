@@ -96,3 +96,8 @@ Les essais physiques Android, la mise à jour d'une installation existante et le
 ## Validation des profils territoriaux
 
 Les contrats contrôlent l'ordre et les limites WGS84 des bounds, l'inclusion du centre, les niveaux de zoom, l'alignement catalogue/profil des locales et l'unicité des sources. Les profils actifs France et Royaume-Uni sont utilisés comme fixtures de régression.
+
+
+## Validation finale des profils FR/GB — HEAD 96e0587
+
+Les deux runs ont réussi : [push 45536902889](https://github.com/Jickssa/megalith-lidar/actions/runs/45536902889) et [PR 45536912586](https://github.com/Jickssa/megalith-lidar/actions/runs/45536912586). Les tests vérifient l'emprise, le centre, les niveaux de zoom, les locales et les sources des profils territoriaux. Les APK Debug sont compilées, vérifiées, alignées et signées v2. Aucun test physique Android ni test visuel réseau de la carte France n'est revendiqué.
