@@ -176,6 +176,8 @@ if __name__ == "__main__":
         assert 'private const val START_URL =' in installed_activity
         assert '"https://appassets.androidplatform.net/assets/web/atlas-home.html"' in installed_activity
         assert 'https://appassets.androidplatform.net/assets/web/index.html' not in installed_activity
+        assert '/assets/web/atlas-home.html' in installed_activity
+        assert 'MainActivity.kt' in str(activity)
 
         # Test --force with source == destination in a separate self-hosted fixture.
         self_host = Path(tmp) / "self-hosted"
