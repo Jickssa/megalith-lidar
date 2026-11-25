@@ -292,6 +292,11 @@ def main() -> int:
             "instanceFollowRedirects = false",
             "isValidDiagnosticPng",
             "trimDiagnosticCache",
+            "activityDestroyed",
+            "override fun onDestroy()",
+            "webView.destroy()",
+            "pendingGeoCallback = null",
+            "fileUploadCallback = null",
         ):
             if native_contract not in native_text:
                 ERRORS.append(f"Contrôle Android de sécurité absent : {native_contract}")

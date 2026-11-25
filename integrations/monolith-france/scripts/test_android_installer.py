@@ -187,6 +187,8 @@ if __name__ == "__main__":
         assert "/assets/web/atlas-home.html" in patched_activity
         actual_activity = (ROOT.parents[1] / "android/app/src/main/java/uk/megalith/lidar/MainActivity.kt").read_text(encoding="utf-8")
         assert "MAX_EXPORT_BYTES" in actual_activity
+        for lifecycle_contract in ("activityDestroyed", "override fun onDestroy()", "webView.destroy()", "pendingGeoCallback = null", "fileUploadCallback = null"):
+            assert lifecycle_contract in actual_activity, lifecycle_contract
         assert "File.createTempFile" in actual_activity
         assert "fileChooserParams.acceptTypes" in actual_activity
         assert "uri.userInfo == null" in actual_activity

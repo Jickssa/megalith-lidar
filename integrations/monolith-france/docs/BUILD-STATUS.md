@@ -65,7 +65,7 @@ Les SHA-256 des archives artefacts sont différents car les ZIP d'artefacts sont
 - POI IGN non validé et détection IA France désactivée.
 - Tests réseau et emprises de référence LiDAR restent à réaliser.
 - Aucun test d'installation/mise à jour sur appareil Android physique, aucune vérification de compatibilité du certificat de signature avec une installation existante ne sont revendiqués.
-- Le cycle de vie Android `MainActivity` (libération WebView et callbacks à la destruction) reste à traiter dans une tranche séparée.
+- `MainActivity.onDestroy()` libère désormais les callbacks de permission et de sélecteur, neutralise le passage de relais des exports asynchrones après destruction, arrête et détruit le WebView. La validation de cette modification repose sur les contrats statiques et le build Android ; aucun test d'appareil physique n'est revendiqué.
 
 
 ## Tranche suivante — agrégation UK et diagnostic des tuiles France

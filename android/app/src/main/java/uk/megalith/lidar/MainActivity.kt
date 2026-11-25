@@ -40,22 +40,28 @@ class MainActivity : Activity() {
     private var pendingGeoOrigin: String? = null
     private var pendingGeoCallback: GeolocationPermissions.Callback? = null
     private var fileUploadCallback: ValueCallback<Array<Uri>>? = null
+    @Volatile private var activityDestroyed = false
     private val diagnosticCacheLock = Any()
 
+    private fun showToastIfActive(message: String, duration: Int = Toast.LENGTH_SHORT) {
+        if (activityDestroyed) return
+        runOnUiThread {
+            if (!activityDestroyed) {
+                Toast.makeText(this@MainActivity, message, duration).show()
+            }
+        }
+    }
     inner class AndroidBridge {
         @JavascriptInterface
         fun saveOrShareFile(filename: String, mimeType: String, content: String) {
+            if (activityDestroyed) return
             if (content.length > MAX_EXPORT_BYTES) {
-                runOnUiThread {
-                    Toast.makeText(this@MainActivity, "Export refused: file exceeds 25 MiB.", Toast.LENGTH_LONG).show()
-                }
+                showToastIfActive("Export refused: file exceeds 25 MiB.", Toast.LENGTH_LONG)
                 return
             }
             val bytes = content.toByteArray(Charsets.UTF_8)
             if (bytes.size > MAX_EXPORT_BYTES) {
-                runOnUiThread {
-                    Toast.makeText(this@MainActivity, "Export refused: file exceeds 25 MiB.", Toast.LENGTH_LONG).show()
-                }
+                showToastIfActive("Export refused: file exceeds 25 MiB.", Toast.LENGTH_LONG)
                 return
             }
             val safeMime = when (mimeType.lowercase()) {
@@ -71,23 +77,30 @@ class MainActivity : Activity() {
                 .takeIf { it.matches(Regex("[A-Za-z0-9]{1,10}")) }
                 ?.let { ".$it" } ?: ".txt"
 
-            // Create and write a unique cache file off the UI thread.
+            // File I/O stays off the UI thread. A completed export is discarded if
+            // the Activity is destroyed before its UI hand-off can run.
             Thread {
+                var temporaryFile: File? = null
                 try {
                     val exportsDir = File(cacheDir, "exports").apply { mkdirs() }
                     val outFile = File.createTempFile("monolith-", suffix, exportsDir)
+                    temporaryFile = outFile
                     outFile.writeBytes(bytes)
                     runOnUiThread {
+                        if (activityDestroyed) {
+                            outFile.delete()
+                            return@runOnUiThread
+                        }
                         try {
                             shareExportedFile(outFile, safeMime)
                         } catch (e: Exception) {
-                            Toast.makeText(this@MainActivity, "Export failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                            outFile.delete()
+                            showToastIfActive("Export failed: ${e.message}")
                         }
                     }
                 } catch (e: Exception) {
-                    runOnUiThread {
-                        Toast.makeText(this@MainActivity, "Export failed: ${e.message}", Toast.LENGTH_SHORT).show()
-                    }
+                    temporaryFile?.delete()
+                    showToastIfActive("Export failed: ${e.message}")
                 }
             }.start()
         }
@@ -501,6 +514,11 @@ class MainActivity : Activity() {
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (activityDestroyed) {
+            pendingGeoOrigin = null
+            pendingGeoCallback = null
+            return
+        }
         if (requestCode == REQ_LOCATION_PERMISSION) {
             val granted = grantResults.any { it == PackageManager.PERMISSION_GRANTED }
             val origin = pendingGeoOrigin
@@ -515,6 +533,11 @@ class MainActivity : Activity() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+        if (activityDestroyed) {
+            fileUploadCallback?.let { callback -> runCatching { callback.onReceiveValue(null) } }
+            fileUploadCallback = null
+            return
+        }
         if (requestCode == REQ_FILE_CHOOSER) {
             val cb = fileUploadCallback ?: return
             fileUploadCallback = null
@@ -533,6 +556,10 @@ class MainActivity : Activity() {
 
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
+        if (activityDestroyed || !::webView.isInitialized) {
+            super.onBackPressed()
+            return
+        }
         webView.evaluateJavascript(
             "(function(){var d=document.getElementById('osmandQrDialog');if(d&&d.open){d.close();return true;}return false;})()"
         ) { res ->
@@ -546,6 +573,36 @@ class MainActivity : Activity() {
                 super.onBackPressed()
             }
         }
+    }
+
+
+    override fun onDestroy() {
+        activityDestroyed = true
+
+        val geoOrigin = pendingGeoOrigin
+        val geoCallback = pendingGeoCallback
+        pendingGeoOrigin = null
+        pendingGeoCallback = null
+        if (geoOrigin != null && geoCallback != null) {
+            runCatching { geoCallback.invoke(geoOrigin, false, false) }
+        }
+
+        fileUploadCallback?.let { callback -> runCatching { callback.onReceiveValue(null) } }
+        fileUploadCallback = null
+
+        if (::webView.isInitialized) {
+            runCatching { webView.stopLoading() }
+            runCatching { webView.webChromeClient = null }
+            runCatching { webView.setDownloadListener(null) }
+            runCatching { webView.removeJavascriptInterface("MegalithAndroid") }
+            runCatching { (webView.parent as? ViewGroup)?.removeView(webView) }
+            runCatching { webView.removeAllViews() }
+            runCatching { webView.destroy() }
+        }
+        if (::rootLayout.isInitialized) {
+            runCatching { rootLayout.removeAllViews() }
+        }
+        super.onDestroy()
     }
 
     companion object {

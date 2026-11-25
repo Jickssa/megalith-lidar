@@ -73,3 +73,8 @@ Les deux runs valident :
 - Build Android Debug, présence des assets France et routes internationales, intégrité ZIP, alignement et signature v2.
 
 Le renommage des dossiers garantit une atomicité par dossier et une restauration pour les exceptions interceptées. Il ne prétend pas couvrir une coupure brutale du processus ou de l'alimentation au milieu de la transaction.
+
+
+## Cycle de vie Android
+
+`MainActivity.onDestroy()` neutralise les callbacks de permission et de sélecteur de fichier, arrête les chargements et détruit le WebView. Les exports en cours peuvent terminer leur écriture sur le thread dédié, mais le résultat est supprimé au lieu d'être partagé ou affiché si l'activité a été détruite. Le validateur vérifie les contrats de nettoyage et le build Gradle confirme la compilation Kotlin ; cela ne remplace pas un essai sur appareil Android physique.
