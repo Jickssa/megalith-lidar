@@ -167,7 +167,16 @@ if __name__ == "__main__":
         assert "DRY-RUN OK" in dry
         assert not (repo / "integrations/monolith-france").exists()
 
+        # The fixture begins with the legacy UK entry route.
+        original_activity = activity.read_text(encoding="utf-8")
+        assert '"https://appassets.androidplatform.net/assets/web/index.html"' in original_activity
         invoke(repo)
+        # Installation must redirect Android startup to the shared country selector.
+        installed_activity = activity.read_text(encoding="utf-8")
+        assert 'private const val START_URL =' in installed_activity
+        assert '"https://appassets.androidplatform.net/assets/web/atlas-home.html"' in installed_activity
+        assert 'https://appassets.androidplatform.net/assets/web/index.html' not in installed_activity
+
         # Test --force with source == destination in a separate self-hosted fixture.
         self_host = Path(tmp) / "self-hosted"
         shutil.copytree(repo, self_host)
