@@ -7,6 +7,9 @@ const { spawnSync } = require('node:child_process');
 const root = process.cwd();
 const ukHtml = fs.readFileSync(root + '/index.html', 'utf8');
 const gbProfile = JSON.parse(fs.readFileSync(root + '/integrations/monolith-france/config/countries/profiles/GB.json', 'utf8'));
+const frProfile = JSON.parse(fs.readFileSync(root + '/integrations/monolith-france/config/countries/profiles/FR.json', 'utf8'));
+const countryCatalog = JSON.parse(fs.readFileSync(root + '/integrations/monolith-france/config/countries/catalog.json', 'utf8'));
+const countryProfileSchema = JSON.parse(fs.readFileSync(root + '/integrations/monolith-france/config/countries/country-profile.schema.json', 'utf8'));
 const frApp = fs.readFileSync(root + '/integrations/monolith-france/web/app.js', 'utf8');
 const frHtml = fs.readFileSync(root + '/integrations/monolith-france/web/index.html', 'utf8');
 
@@ -60,6 +63,26 @@ assert.ok(!ukHtml.includes('130279.0'), 'hard-coded national percentage denomina
 assert.ok(ukHtml.includes('England campaign'), 'campaign extent is stated explicitly');
 assert.equal(gbProfile.capabilities.activeSurveyExtent, 'England', 'GB profile distinguishes actual campaign extent');
 assert.ok(gbProfile.capabilities.activeSurveyExtentNote.includes('United Kingdom'), 'profile documents the territory/survey distinction');
+assert.equal(frProfile.countryCode, 'FR');
+assert.equal(frProfile.defaultLocale, 'fr-FR');
+assert.equal(frProfile.capabilities.aiDetection, false, 'France AI model remains disabled');
+assert.equal(countryCatalog.defaultCountry, 'FR');
+for (const entry of countryCatalog.countries) {
+  const profile = entry.code === 'FR' ? frProfile : entry.code === 'GB' ? gbProfile : null;
+  assert.ok(profile, 'every active catalogue country has an explicitly loaded profile');
+  assert.equal(profile.countryCode, entry.code);
+  assert.deepEqual(profile.supportedLocales, entry.supportedLanguages);
+  assert.equal(profile.defaultLocale, entry.defaultLanguage);
+  const { center, bounds, minZoom, zoom, maxZoom } = profile.map;
+  assert.equal(center.length, 2, 'map center order is [latitude, longitude]');
+  assert.ok(Number.isFinite(center[0]) && Number.isFinite(center[1]));
+  assert.equal(bounds.length, 4, 'map bounds order is [west, south, east, north]');
+  const [west, south, east, north] = bounds;
+  assert.ok(west < east && south < north, 'map bounds must be ordered');
+  assert.ok(west <= center[1] && center[1] <= east && south <= center[0] && center[0] <= north, 'map center must be inside declared bounds');
+  assert.ok(0 <= minZoom && minZoom <= zoom && zoom <= maxZoom && maxZoom <= 24, 'map zoom levels must be ordered');
+}
+assert.equal(countryProfileSchema.properties.map.properties.bounds.oneOf[1].minItems, 4, 'profile schema enforces four geographic bounds');
 
 assert.ok(frApp.includes("layer.on('tileerror'"), 'France tile errors are monitored');
 assert.ok(frApp.includes('function buildTileHealthSummary'), 'France tile status summary is available');

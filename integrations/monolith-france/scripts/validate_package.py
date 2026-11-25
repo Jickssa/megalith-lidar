@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 import re
 import sys
 from pathlib import Path
@@ -126,6 +127,44 @@ def main() -> int:
                     ERRORS.append(f"Profil {code} : code ou statut incohérent.")
                 if profile.get("supportedLocales") != locales:
                     ERRORS.append(f"Profil {code} : supportedLocales diffère du catalogue.")
+                profile_names = profile.get("name", {})
+                if any(locale not in profile_names for locale in locales):
+                    ERRORS.append(f"Profil {code} : traduction du nom absente pour une langue déclarée.")
+                if entry.get("defaultLanguage") != profile.get("defaultLocale"):
+                    ERRORS.append(f"Profil {code} : defaultLanguage du catalogue diffère de defaultLocale du profil.")
+                map_profile = profile.get("map", {})
+                center = map_profile.get("center")
+                bounds = map_profile.get("bounds")
+                zoom_values = (map_profile.get("minZoom"), map_profile.get("zoom"), map_profile.get("maxZoom"))
+                valid_center = (
+                    isinstance(center, list) and len(center) == 2
+                    and all(isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value) for value in center)
+                )
+                if not valid_center:
+                    ERRORS.append(f"Profil {code} : centre de carte [latitude, longitude] invalide.")
+                elif not (-90 <= center[0] <= 90 and -180 <= center[1] <= 180):
+                    ERRORS.append(f"Profil {code} : centre de carte hors des limites WGS84.")
+                if bounds is not None:
+                    valid_bounds = (
+                        isinstance(bounds, list) and len(bounds) == 4
+                        and all(isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value) for value in bounds)
+                    )
+                    if not valid_bounds:
+                        ERRORS.append(f"Profil {code} : bounds doivent être [ouest, sud, est, nord] ou null.")
+                    else:
+                        west, south, east, north = bounds
+                        if not (-180 <= west < east <= 180 and -90 <= south < north <= 90):
+                            ERRORS.append(f"Profil {code} : bounds WGS84 invalides ou inversées.")
+                        elif valid_center and not (west <= center[1] <= east and south <= center[0] <= north):
+                            ERRORS.append(f"Profil {code} : centre de carte hors des bounds déclarées.")
+                if all(isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value) for value in zoom_values):
+                    if not (0 <= zoom_values[0] <= zoom_values[1] <= zoom_values[2] <= 24):
+                        ERRORS.append(f"Profil {code} : niveaux minZoom/zoom/maxZoom incohérents.")
+                else:
+                    ERRORS.append(f"Profil {code} : niveaux de zoom non numériques ou absents.")
+                source_ids = [source.get("id") for source in profile.get("sources", []) if isinstance(source, dict)]
+                if len(source_ids) != len(profile.get("sources", [])) or len(source_ids) != len(set(source_ids)):
+                    ERRORS.append(f"Profil {code} : identifiants de sources absents ou dupliqués.")
                 if profile.get("defaultLocale") not in locales:
                     ERRORS.append(f"Profil {code} : langue par défaut non déclarée.")
                 routes = {"FR": "/assets/web/france/web/index.html", "GB": "/assets/web/index.html"}

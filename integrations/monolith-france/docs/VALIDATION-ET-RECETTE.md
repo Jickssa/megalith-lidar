@@ -91,3 +91,8 @@ Le renommage des dossiers garantit une atomicité par dossier et une restauratio
 - Les deux builds APK passent l'intégrité, `zipalign` et la vérification de signature v2.
 
 Les essais physiques Android, la mise à jour d'une installation existante et le contrôle visuel en direct des tuiles LiDAR restent hors validation automatisée.
+
+
+## Validation des profils territoriaux
+
+Les contrats contrôlent l'ordre et les limites WGS84 des bounds, l'inclusion du centre, les niveaux de zoom, l'alignement catalogue/profil des locales et l'unicité des sources. Les profils actifs France et Royaume-Uni sont utilisés comme fixtures de régression.

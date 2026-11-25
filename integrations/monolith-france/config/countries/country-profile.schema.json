@@ -87,9 +87,18 @@
           "maximum": 24
         },
         "bounds": {
-          "type": [
-            "array",
-            "null"
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "array",
+              "minItems": 4,
+              "maxItems": 4,
+              "items": {
+                "type": "number"
+              }
+            }
           ]
         }
       },

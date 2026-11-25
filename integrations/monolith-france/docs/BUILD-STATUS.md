@@ -140,3 +140,8 @@ SHA-256 des ZIP d'artefacts :
 - PR : `eacc078abc4e9cbad7d90524a986b9ccd4487d84db65e5bcf012cd14d2583414`.
 
 Ne pas assimiler les APK issues des deux builds distincts ni confondre l'empreinte du ZIP avec celle de l'APK.
+
+
+## Contrats de profils territoriaux renforcés
+
+Le schéma et le validateur contrôlent désormais la forme des bornes WGS84 `[ouest, sud, est, nord]`, l'inclusion du centre de carte, l'ordre `minZoom ≤ zoom ≤ maxZoom`, la cohérence de la langue par défaut entre catalogue et profil, les noms pour les langues déclarées et l'unicité des identifiants de sources. Les tests internationaux exercent ces invariants sur FR et GB.
