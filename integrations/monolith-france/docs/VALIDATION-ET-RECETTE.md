@@ -4,7 +4,7 @@
 
 L'Atlas France comprend trois espaces fonctionnels : Carte & LiDAR, Liste des candidats, Détails du site et carnet de terrain. Les résultats IGN/OSM et les observations locales alimentent un modèle d'affichage commun, avec source, catégorie, nature et état de vérification. La sélection relie la liste, la carte et l'inspecteur. Aucun score ou verdict archéologique n'est fabriqué.
 
-## Validation automatisée — HEAD a6b634fe760998a8dc9cf870a8dab10bb5650e60
+## Validation automatisée initiale — HEAD a6b634fe760998a8dc9cf870a8dab10bb5650e60
 
 Deux workflows GitHub Actions ont réussi sur le même HEAD :
 - Push : [45381106088](https://github.com/Jickssa/megalith-lidar/actions/runs/45381106088).
@@ -42,7 +42,7 @@ Artefacts :
 
 - L'interface source UK n'est pas refactorisée en composants JavaScript communs ; elle reste préservée.
 - La présente livraison établit la structure STEP 1–3 côté France et le modèle de sélection associé ; elle ne constitue pas encore un shell de composants partagé au niveau du code UK/FR.
-- Le regroupement des marqueurs UK et le calcul de couverture de la campagne restent à auditer.
+- L'agrégation des marqueurs UK et la suppression du ratio national fixe sont désormais livrées. La cause complète de l'ancien dépassement de 100 % reste à vérifier au niveau des surfaces géographiques et recouvrements éventuels.
 - La cause du rectangle sombre de la carte France n'est pas établie par capture seule.
 - POI IGN et IA France restent désactivés.
 - Aucun test physique Android ni test de mise à jour d'une application déjà installée avec vérification de certificat n'est revendiqué.
@@ -59,3 +59,17 @@ Artefacts :
 ## Installateur transactionnel
 
 Un test injecte une erreur lors du remplacement de `config` après le remplacement de `web`. La procédure doit restaurer les contenus précédents de `web`, `config` et `docs`. Le test ne simule pas une coupure électrique ou un arrêt forcé du processus ; la garantie porte sur les exceptions remontées pendant l'exécution.
+
+
+## Validation de la tranche suivante — HEAD 1ce620e
+
+Push : [45535520209](https://github.com/Jickssa/megalith-lidar/actions/runs/45535520209) — succès.  
+PR #2 : [45535526503](https://github.com/Jickssa/megalith-lidar/actions/runs/45535526503) — succès.
+
+Les deux runs valident :
+- Tests de logique Web et fonctions de diagnostic des tuiles.
+- Tests du contrat international et exécution de `node --check` sur le script inline UK.
+- Test de remplacement transactionnel : l'échec injecté au remplacement de `config` restaure les trois arbres runtime précédents.
+- Build Android Debug, présence des assets France et routes internationales, intégrité ZIP, alignement et signature v2.
+
+Le renommage des dossiers garantit une atomicité par dossier et une restauration pour les exceptions interceptées. Il ne prétend pas couvrir une coupure brutale du processus ou de l'alimentation au milieu de la transaction.

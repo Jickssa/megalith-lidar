@@ -3,7 +3,7 @@
 ## Harmonisation initiale de l'Atlas France
 
 Branche : `feature/monolith-international-next`  
-HEAD validé : `a6b634fe760998a8dc9cf870a8dab10bb5650e60`  
+Dernier HEAD validé : `1ce620e14d9a2c9e50c820b12a9e2a8e7475b61d`  
 PR : [#2](https://github.com/Jickssa/megalith-lidar/pull/2) — ouverte, brouillon, non fusionnée.
 
 ### Changements intégrés
@@ -59,12 +59,13 @@ Les SHA-256 des archives artefacts sont différents car les ZIP d'artefacts sont
 
 ### Limites non couvertes
 
-- La source et le moteur UK restent inchangés ; les trois sections historiques sont préservées, mais pas encore refactorisées dans un shell JavaScript partagé avec France.
-- Le regroupement des marqueurs UK et l'audit du pourcentage de couverture supérieur à 100 % restent à réaliser.
+- Les modèles, données d'entraînement et moteurs de détection UK restent inchangés ; le rendu cartographique et la présentation de la progression ont évolué. Le shell JavaScript UK/FR n'est pas encore partagé.
+- L'agrégation visuelle des marqueurs UK et la suppression du ratio national codé en dur sont livrées. L'origine mathématique complète de l'ancien dépassement de 100 % reste à établir par audit des surfaces et éventuels recouvrements de carrés.
 - La zone sombre de la carte France nécessite un diagnostic réel des tuiles et du rendu.
 - POI IGN non validé et détection IA France désactivée.
 - Tests réseau et emprises de référence LiDAR restent à réaliser.
 - Aucun test d'installation/mise à jour sur appareil Android physique, aucune vérification de compatibilité du certificat de signature avec une installation existante ne sont revendiqués.
+- Le cycle de vie Android `MainActivity` (libération WebView et callbacks à la destruction) reste à traiter dans une tranche séparée.
 
 
 ## Tranche suivante — agrégation UK et diagnostic des tuiles France
@@ -81,3 +82,34 @@ Les SHA-256 des archives artefacts sont différents car les ZIP d'artefacts sont
 - Les arbres runtime `web`, `config` et `docs` sont copiés vers un répertoire de staging situé sur le même système de fichiers que le dépôt hôte.
 - Leur remplacement s'effectue par `os.replace()` ; en cas d'exception capturée au cours des échanges, les arbres déjà remplacés sont supprimés et les sauvegardes restaurées.
 - Une régression simule l'échec du deuxième renommage et vérifie le rétablissement du contenu antérieur des trois répertoires.
+
+
+## Validation finale de la tranche — HEAD 1ce620e
+
+Branche : `feature/monolith-international-next`  
+PR #2 : ouverte, brouillon, non fusionnée.  
+HEAD : `1ce620e14d9a2c9e50c820b12a9e2a8e7475b61d`.
+
+Les workflows push et Pull Request ont réussi sur ce HEAD :
+
+| Événement | Run | Résultat |
+|---|---:|---|
+| Push | [45535520209](https://github.com/Jickssa/megalith-lidar/actions/runs/45535520209) | success |
+| PR #2 | [45535526503](https://github.com/Jickssa/megalith-lidar/actions/runs/45535526503) | success |
+
+Les deux exécutions ont validé le paquet, la syntaxe JavaScript, les tests Web, le test international (groupement UK, emprise GB, script inline UK), la syntaxe Python, le test de rollback de l'installateur, le build Android Debug, les assets APK, l'intégrité ZIP, `zipalign` et `apksigner` (signature v2 vérifiée).
+
+### APK de ce HEAD
+
+Les deux fichiers APK proviennent de builds distincts ; leurs empreintes binaires sont donc rapportées séparément.
+
+| Événement | Artefact | SHA-256 APK | Taille ZIP artefact | Expiration |
+|---|---:|---|---:|---|
+| Push | [14986982721](https://github.com/Jickssa/megalith-lidar/actions/runs/45535520209/artifacts/14986982721) | `08c8fe178efc371b311653d6f3053220e0d4150c44df05bb1360a1942edae965` | 19 006 598 octets | 2026-12-09 02:49 UTC |
+| PR | [14986891901](https://github.com/Jickssa/megalith-lidar/actions/runs/45535526503/artifacts/14986891901) | `18701045a512668f3198ca67cbe2c88b69a0c6c183299b349e9e14831d5d4413` | 19 006 598 octets | 2026-12-09 02:49 UTC |
+
+SHA-256 des archives ZIP d'artefact :
+- Push : `cf7a3ecffebeb0bc11bc84925c8db162d64fd764536832730fbcc91b0af6e7e6`.
+- PR : `66abb07dbaaca9b00c650772be40abd14230c4d6b5a43ee8bb9cd74dc78bf7a0`.
+
+Les archives et APK sont des builds distincts ; ne pas substituer l'empreinte de l'archive à celle de l'APK.
