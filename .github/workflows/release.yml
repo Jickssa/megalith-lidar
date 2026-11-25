@@ -1,150 +1,144 @@
-name: Release Android APK
+name: Android Release Candidate
 
 on:
-  push:
-    tags:
-      - "v*"
   workflow_dispatch:
     inputs:
-      tag:
-        description: "Release tag (e.g. v3.2.0)"
+      source_ref:
+        description: "Exact branch or commit to validate (must be the International branch)"
         required: true
-        default: "v3.2.0"
-
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+        default: "feature/monolith-international-next"
+      tag:
+        description: "Reserved release tag name; this workflow will not create it or publish a release"
+        required: true
+        default: "v3.3.0"
 
 permissions:
   contents: read
 
 jobs:
-  build:
-    name: Build Reproducible APK
+  build-release-candidate:
+    name: Build and inspect signed/unsigned release candidate (no publication)
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
-    permissions:
-      contents: read
+    timeout-minutes: 45
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - name: Validate inputs and reject existing tags
+        env:
+          SOURCE_REF: ${{ inputs.source_ref }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          [[ "$SOURCE_REF" == "feature/monolith-international-next" ]] || { echo "source_ref must be feature/monolith-international-next"; exit 1; }
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "Invalid release tag format"; exit 1; }
+
+      - name: Checkout exact selected source ref
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ inputs.source_ref }}
+          fetch-depth: 0
           sparse-checkout: |
             /*
             !docs/Uk_roman_roads_2.obf
             !docs/megalith-lidar.osf
           sparse-checkout-cone-mode: false
 
+      - name: Record source identity and enforce version/tag consistency
+        id: identity
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          SOURCE_SHA="$(git rev-parse HEAD)"
+          TAG_SHA="$(git rev-parse -q --verify "refs/tags/${RELEASE_TAG}^{commit}" || true)"
+          if [[ -n "$TAG_SHA" ]]; then echo "Refusing existing tag: $RELEASE_TAG -> $TAG_SHA"; exit 1; fi
+          VERSION_CODE="$(sed -nE 's/^[[:space:]]*versionCode[[:space:]]*=[[:space:]]*([0-9]+).*$/\1/p' android/app/build.gradle.kts | head -n1)"
+          VERSION_NAME="$(sed -nE 's/^[[:space:]]*versionName[[:space:]]*=[[:space:]]*"([^"]+)".*$/\1/p' android/app/build.gradle.kts | head -n1)"
+          [[ "$RELEASE_TAG" == "v${VERSION_NAME}" ]] || { echo "Tag/versionName mismatch: $RELEASE_TAG vs $VERSION_NAME"; exit 1; }
+          [[ -n "$VERSION_CODE" && "$VERSION_CODE" -gt 320 ]] || { echo "versionCode must be greater than 320"; exit 1; }
+          echo "source_sha=$SOURCE_SHA" >> "$GITHUB_OUTPUT"
+          echo "version_code=$VERSION_CODE" >> "$GITHUB_OUTPUT"
+          echo "version_name=$VERSION_NAME" >> "$GITHUB_OUTPUT"
+          echo "source_sha=$SOURCE_SHA" >> "$GITHUB_STEP_SUMMARY"
+          echo "tag=$RELEASE_TAG (not created)" >> "$GITHUB_STEP_SUMMARY"
+          echo "version=$VERSION_NAME ($VERSION_CODE)" >> "$GITHUB_STEP_SUMMARY"
+
       - name: Set up JDK 17
-        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654  # v5.2.0
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
         with:
           distribution: temurin
           java-version: "17"
           cache: gradle
 
-      - name: Install Android SDK Platform 35 & Build-Tools 35.0.0
+      - name: Install Android SDK Platform 35 & Build-Tools
         run: |
           yes | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
           "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0"
 
-      - name: Build unsigned release APK with R8 and SOURCE_DATE_EPOCH
+      - name: Install Python build dependency
+        run: python3 -m pip install --disable-pip-version-check "Pillow>=10,<13"
+
+      - name: Build release APK with R8
         working-directory: android
         run: |
           export SOURCE_DATE_EPOCH=$(git log -1 --format=%ct)
           ./gradlew assembleRelease -PnoLintVital --no-daemon --stacktrace
 
-      - name: Assert reflectively-loaded classes survived R8
+      - name: Check R8 retained classes
         run: ./scripts/check-r8-kept-classes.sh
 
-      - name: Align and sign APK (v2 + v3 signatures, alignment preserved)
-        env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 || secrets.RELEASE_KEYSTORE_BASE64 }}
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD || secrets.RELEASE_KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS || secrets.RELEASE_KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD || secrets.RELEASE_KEY_PASSWORD }}
+      - name: Verify APK contents and archive integrity
         run: |
-          TAG_NAME="${{ github.event.inputs.tag || github.ref_name }}"
-          BUILD_TOOLS="${ANDROID_HOME}/build-tools/35.0.0"
-          UNSIGNED_APK="android/app/build/outputs/apk/release/app-release-unsigned.apk"
-          ALIGNED_APK="android/app/build/outputs/apk/release/app-release-aligned.apk"
-          mkdir -p dist
-          SIGNED_APK="dist/megalith-lidar-${TAG_NAME}.apk"
+          set -euo pipefail
+          APK=android/app/build/outputs/apk/release/app-release-unsigned.apk
+          test -s "$APK"
+          python3 - "$APK" <<'PY'
+          from zipfile import ZipFile
+          import sys
+          required = (
+              "assets/web/atlas-home.html",
+              "assets/web/community-countries.html",
+              "assets/web/france-home.html",
+              "assets/web/uk-home.html",
+              "assets/web/index.html",
+              "assets/web/france/web/index.html",
+              "assets/web/france/web/app.js",
+              "assets/web/france/web/styles.css",
+              "assets/web/france/config/countries/catalog.json",
+              "assets/web/france/config/countries/profiles/FR.json",
+              "assets/web/france/config/countries/profiles/GB.json",
+              "assets/web/france/config/languages/fr-FR.json",
+              "assets/web/france/config/languages/en-GB.json",
+              "assets/web/leaflet/leaflet.js",
+              "assets/web/leaflet/leaflet.css",
+              "assets/web/docs/candidates.geojson",
+              "assets/web/docs/roman_candidates.geojson",
+              "assets/web/docs/enclosure_candidates.geojson",
+              "assets/web/docs/survey_summary.json",
+          )
+          with ZipFile(sys.argv[1]) as apk:
+              bad = apk.testzip()
+              if bad: raise SystemExit(f"ZIP CRC failure: {bad}")
+              names = set(apk.namelist())
+              missing = [name for name in required if name not in names]
+              if missing: raise SystemExit("APK assets missing:\n" + "\n".join(missing))
+              start = "uk/megalith/lidar/MainActivity.class"
+              # Kotlin compiles MainActivity to MainActivity.class; verify startup string is retained somewhere in dex.
+              dex = [name for name in names if name.startswith("classes") and name.endswith(".dex")]
+              if not dex: raise SystemExit("No DEX bytecode found")
+              data = b"".join(apk.read(name) for name in dex)
+              if b"/assets/web/atlas-home.html" not in data: raise SystemExit("Compiled DEX does not reference chooser start route")
+              if b"/assets/web/index.html" not in data: raise SystemExit("UK atlas route missing from DEX")
+          print("Release APK ZIP, routes and territory assets verified")
+          PY
 
-          echo "${KEYSTORE_BASE64}" | base64 -d > /tmp/megalith-lidar-release.jks
-          "${BUILD_TOOLS}/zipalign" -f 4 "${UNSIGNED_APK}" "${ALIGNED_APK}"
-          "${BUILD_TOOLS}/apksigner" sign \
-            --ks /tmp/megalith-lidar-release.jks \
-            --ks-pass env:KEYSTORE_PASSWORD \
-            --ks-key-alias "${KEY_ALIAS}" \
-            --key-pass env:KEY_PASSWORD \
-            --alignment-preserved \
-            --v1-signing-enabled false \
-            --v2-signing-enabled true \
-            --v3-signing-enabled true \
-            --out "${SIGNED_APK}" \
-            "${ALIGNED_APK}"
-          rm -f /tmp/megalith-lidar-release.jks
-
-          "${BUILD_TOOLS}/zipalign" -c -v 4 "${SIGNED_APK}" > /dev/null
-          "${BUILD_TOOLS}/apksigner" verify --verbose --print-certs "${SIGNED_APK}"
-          (cd dist && sha256sum "$(basename "${SIGNED_APK}")" > "$(basename "${SIGNED_APK}").sha256")
-          cat "${SIGNED_APK}.sha256"
-
-      - name: Upload release artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+      - name: Upload unsigned release candidate (non-publishing)
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: megalith-lidar-release
-          path: |
-            dist/megalith-lidar-*.apk
-            dist/megalith-lidar-*.apk.sha256
+          name: megalith-lidar-release-candidate-${{ inputs.tag }}
+          path: android/app/build/outputs/apk/release/app-release-unsigned.apk
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 14
 
-  publish:
-    name: Publish GitHub Release
-    needs: build
-    if: |
-      !cancelled() && needs.build.result == 'success'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    permissions:
-      contents: write
-      id-token: write
-      attestations: write
-    steps:
-      - name: Checkout release changelog metadata
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-        with:
-          sparse-checkout: |
-            fastlane/metadata/android/en-US/changelogs
-          sparse-checkout-cone-mode: false
-
-      - name: Download release artifacts
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
-        with:
-          name: megalith-lidar-release
-          path: release/
-
-      - name: Attest build provenance
-        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8  # v4.2.2
-        with:
-          subject-path: release/*.apk
-
-      - name: Generate SHA256SUMS
+      - name: Record build provenance
         run: |
-          : > SHA256SUMS
-          find release -maxdepth 1 -type f -name '*.apk' | sort | while read -r f; do
-            printf '%s  %s\n' "$(sha256sum "$f" | cut -d' ' -f1)" "$(basename "$f")" >> SHA256SUMS
-          done
-          cat SHA256SUMS
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64  # v3.0.3
-        with:
-          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
-          name: Megalith LiDAR ${{ github.event.inputs.tag || github.ref_name }}
-          body_path: fastlane/metadata/android/en-US/changelogs/320.txt
-          generate_release_notes: true
-          files: |
-            release/*.apk
-            release/*.apk.sha256
-            SHA256SUMS
+          echo "Build-only workflow: no signing, no tag creation, no GitHub Release publication." >> "$GITHUB_STEP_SUMMARY"
+          echo "Source SHA: ${{ steps.identity.outputs.source_sha }}" >> "$GITHUB_STEP_SUMMARY"
