@@ -54,3 +54,8 @@ Artefacts :
 - Suppression du ratio fondé sur la constante 130279.0 ; seules les surfaces et quantités provenant du résumé de campagne sont présentées.
 - Distinction explicite entre profil territorial GB et emprise de la campagne publiée (Angleterre).
 - Les erreurs de tuiles IGN, OSM et LiDAR sont désormais signalées. La cause du rectangle sombre reste à confirmer par un essai visuel réel sur les services et emprises ciblés.
+
+
+## Installateur transactionnel
+
+Un test injecte une erreur lors du remplacement de `config` après le remplacement de `web`. La procédure doit restaurer les contenus précédents de `web`, `config` et `docs`. Le test ne simule pas une coupure électrique ou un arrêt forcé du processus ; la garantie porte sur les exceptions remontées pendant l'exécution.

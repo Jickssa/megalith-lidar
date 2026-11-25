@@ -74,3 +74,10 @@ Les SHA-256 des archives artefacts sont différents car les ZIP d'artefacts sont
 - Le profil GB précise que le territoire déclaré est le Royaume-Uni, tandis que la campagne actuellement publiée couvre l'Angleterre.
 - Le module France affiche les chargements, tuiles reçues et erreurs des fonds et couches LiDAR. Une réponse HTTP réussie ne prouve pas à elle seule que la tuile contient une donnée LiDAR utile.
 - Validation GitHub Actions de cette tranche : en attente.
+
+
+## Installateur — remplacement transactionnel des assets
+
+- Les arbres runtime `web`, `config` et `docs` sont copiés vers un répertoire de staging situé sur le même système de fichiers que le dépôt hôte.
+- Leur remplacement s'effectue par `os.replace()` ; en cas d'exception capturée au cours des échanges, les arbres déjà remplacés sont supprimés et les sauvegardes restaurées.
+- Une régression simule l'échec du deuxième renommage et vérifie le rétablissement du contenu antérieur des trois répertoires.

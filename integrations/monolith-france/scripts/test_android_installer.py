@@ -2,6 +2,8 @@
 """Regression test for Monolith France Android installer."""
 from __future__ import annotations
 
+import importlib.util
+import os
 import shutil
 import subprocess
 import sys
@@ -35,7 +37,48 @@ def invoke(repo: Path, *args: str) -> str:
     return proc.stdout
 
 
+def test_runtime_tree_rollback() -> None:
+    spec = importlib.util.spec_from_file_location("monolith_france_installer_test", INSTALLER)
+    if spec is None or spec.loader is None:
+        raise AssertionError("Could not load installer module for transaction test.")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    with tempfile.TemporaryDirectory(prefix="monolith-france-rollback-test-") as tmp:
+        root = Path(tmp)
+        integration = root / "integration"
+        staged = root / "stage"
+        integration.mkdir()
+        staged.mkdir()
+        for folder in ("web", "config", "docs"):
+            old = integration / folder
+            old.mkdir()
+            (old / "state.txt").write_text("old-" + folder, encoding="utf-8")
+            new = staged / folder
+            new.mkdir()
+            (new / "state.txt").write_text("new-" + folder, encoding="utf-8")
+        real_replace = os.replace
+        failed = {"done": False}
+        def fail_config_stage(source, destination):
+            if Path(source) == staged / "config" and not failed["done"]:
+                failed["done"] = True
+                raise OSError("simulated second-tree rename failure")
+            return real_replace(source, destination)
+        module.os.replace = fail_config_stage
+        try:
+            try:
+                module.replace_runtime_directories_transactionally(staged, integration)
+            except OSError as exc:
+                assert "simulated" in str(exc)
+            else:
+                raise AssertionError("Injected rename failure was not raised.")
+        finally:
+            module.os.replace = real_replace
+        assert failed["done"]
+        for folder in ("web", "config", "docs"):
+            assert (integration / folder / "state.txt").read_text(encoding="utf-8") == "old-" + folder
+    print("PASS — runtime directory replacement rolls back on mid-commit failure.")
 def main() -> int:
+    test_runtime_tree_rollback()
     with tempfile.TemporaryDirectory(prefix="monolith-france-installer-") as tmp:
         repo = Path(tmp) / "megalith-lidar"
         activity = repo / "android/app/src/main/java/uk/megalith/lidar/MainActivity.kt"

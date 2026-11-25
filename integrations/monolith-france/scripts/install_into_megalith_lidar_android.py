@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import shutil
 import sys
@@ -337,6 +338,49 @@ a:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
     }
 
 
+def replace_runtime_directories_transactionally(staged_root: Path, integration: Path, folders=("web", "config", "docs")) -> None:
+    """Replace runtime trees with rollback if any directory rename fails.
+
+    The staging directory must share a filesystem with the integration directory so
+    os.replace() remains atomic for each directory entry.
+    """
+    staged_root = Path(staged_root)
+    integration = Path(integration)
+    backup_root = staged_root / ".rollback-backups"
+    backup_root.mkdir(parents=True, exist_ok=True)
+    moved = []
+    try:
+        for folder in folders:
+            source = staged_root / folder
+            destination = integration / folder
+            backup = backup_root / folder
+            if not source.is_dir():
+                raise RuntimeError(f"Staged runtime directory is missing: {source}")
+            had_destination = destination.exists()
+            if had_destination:
+                os.replace(destination, backup)
+            try:
+                os.replace(source, destination)
+            except Exception:
+                if had_destination and backup.exists():
+                    os.replace(backup, destination)
+                raise
+            moved.append((destination, backup, had_destination))
+    except Exception as exc:
+        rollback_errors = []
+        for destination, backup, had_destination in reversed(moved):
+            try:
+                if destination.is_dir():
+                    shutil.rmtree(destination)
+                elif destination.exists():
+                    destination.unlink()
+                if had_destination and backup.exists():
+                    os.replace(backup, destination)
+            except Exception as rollback_error:
+                rollback_errors.append(f"{destination}: {rollback_error}")
+        if rollback_errors:
+            raise RuntimeError("Runtime-tree replacement failed and rollback was incomplete: " + "; ".join(rollback_errors)) from exc
+        raise
 def backup_once(path: Path, repo: Path) -> None:
     # Keep backups out of Android source/resource trees: AGP scans res/values.
     relative = path.resolve().relative_to(repo.resolve())
@@ -452,22 +496,14 @@ def main() -> int:
         print("DRY-RUN OK: Android host, WebView, permissions, Leaflet, Gradle, and PNG assets.")
         return 0
 
-    # Stage the source before replacing the destination. This is essential when
-    # PACKAGE_ROOT itself is integrations/monolith-france in the repository checkout.
-    with tempfile.TemporaryDirectory(prefix="monolith-france-stage-") as staging_dir:
-        staged = Path(staging_dir) / "monolith-france"
-        staged.mkdir(parents=True)
+    # Stage on the same filesystem as the destination. Directory renames are
+    # atomic individually; caught failures restore all previously replaced trees.
+    integration.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix=".monolith-france-stage-", dir=integration.parent) as staging_dir:
+        staged = Path(staging_dir)
         for folder in ("web", "config", "docs"):
             shutil.copytree(PACKAGE_ROOT / folder, staged / folder)
-
-        # Replace only runtime trees. Preserve scripts, README, manifests and metadata
-        # when the source package is also the destination directory.
-        integration.mkdir(parents=True, exist_ok=True)
-        for folder in ("web", "config", "docs"):
-            destination = integration / folder
-            if destination.exists():
-                shutil.rmtree(destination)
-            shutil.copytree(staged / folder, destination)
+        replace_runtime_directories_transactionally(staged, integration)
 
     # Inject the module at the very end of the upstream asset-generation function.
     # Keep generated territory pages upgrade-safe across repeated installations.
