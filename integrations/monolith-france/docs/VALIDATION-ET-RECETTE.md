@@ -80,3 +80,14 @@ Le renommage des dossiers garantit une atomicité par dossier et une restauratio
 `MainActivity.onDestroy()` neutralise les callbacks de permission et de sélecteur de fichier, arrête les chargements et détruit le WebView. Les exports en cours peuvent terminer leur écriture sur le thread dédié, mais le résultat est supprimé au lieu d'être partagé ou affiché si l'activité a été détruite. Le validateur vérifie les contrats de nettoyage et le build Gradle confirme la compilation Kotlin ; cela ne remplace pas un essai sur appareil Android physique.
 
 - Le rendu agrégé est recalculé sur `moveend` ; les cellules écran suivent ainsi le viewport après un déplacement à zoom constant.
+
+
+## Résultats de validation finaux — HEAD 3248ec2
+
+- Push : [45536266046](https://github.com/Jickssa/megalith-lidar/actions/runs/45536266046) — succès.
+- PR #2 : [45536272196](https://github.com/Jickssa/megalith-lidar/actions/runs/45536272196) — succès.
+- Les tests internationaux vérifient la réagrégation UK après `moveend` ainsi que le re-rendu détaillé au zoom 11.
+- Le validateur et la régression installateur contrôlent maintenant l'état de destruction de `MainActivity`, la destruction du WebView et la neutralisation des callbacks.
+- Les deux builds APK passent l'intégrité, `zipalign` et la vérification de signature v2.
+
+Les essais physiques Android, la mise à jour d'une installation existante et le contrôle visuel en direct des tuiles LiDAR restent hors validation automatisée.

@@ -3,7 +3,7 @@
 ## Harmonisation initiale de l'Atlas France
 
 Branche : `feature/monolith-international-next`  
-Dernier HEAD validé : `1ce620e14d9a2c9e50c820b12a9e2a8e7475b61d`  
+Dernier HEAD de code validé : `3248ec271095194673604c05eb5c5e2793ca8b50`  
 PR : [#2](https://github.com/Jickssa/megalith-lidar/pull/2) — ouverte, brouillon, non fusionnée.
 
 ### Changements intégrés
@@ -113,3 +113,30 @@ SHA-256 des archives ZIP d'artefact :
 - PR : `66abb07dbaaca9b00c650772be40abd14230c4d6b5a43ee8bb9cd74dc78bf7a0`.
 
 Les archives et APK sont des builds distincts ; ne pas substituer l'empreinte de l'archive à celle de l'APK.
+
+
+## Validation finale de la couche Android et du rendu cartographique — HEAD 3248ec2
+
+La tranche inclut aussi le nettoyage du cycle de vie Android et le recalcul des groupes UK après déplacement de la carte.
+
+| Événement | Workflow | Résultat |
+|---|---|---|
+| Push | [45536266046](https://github.com/Jickssa/megalith-lidar/actions/runs/45536266046) | success |
+| PR #2 | [45536272196](https://github.com/Jickssa/megalith-lidar/actions/runs/45536272196) | success |
+
+Les deux workflows valident les tests statiques, les suites JavaScript Web et internationales, le contrat du cycle de vie Android, le test transactionnel de l'installateur, la compilation Kotlin/Gradle, la présence des assets, le contrôle d'intégrité ZIP, `zipalign` et `apksigner` (signature v2 vérifiée).
+
+### Artefacts APK du HEAD 3248ec2
+
+Les builds push et PR ont des empreintes distinctes :
+
+| Événement | Artefact | SHA-256 APK | Taille ZIP artefact | Expiration |
+|---|---:|---|---:|---|
+| Push | [14986489107](https://github.com/Jickssa/megalith-lidar/actions/runs/45536266046/artifacts/14986489107) | `d196e2c0637e97916d72a481c4de7ffc6c8d51f19233f1484440724d9c18f6a2` | 19 009 377 octets | 2026-12-09 02:55 UTC |
+| PR | [14987515465](https://github.com/Jickssa/megalith-lidar/actions/runs/45536272196/artifacts/14987515465) | `73f86fc443b7e5c55839ee627fd8de436cdfa19a448822cc54a4429d91810fbb` | 19 009 377 octets | 2026-12-09 02:55 UTC |
+
+SHA-256 des ZIP d'artefacts :
+- Push : `16bd1c23a7d83400dd7e0300844685bbcc8c16ca49b3b2cb947548884fbf6fe9`.
+- PR : `eacc078abc4e9cbad7d90524a986b9ccd4487d84db65e5bcf012cd14d2583414`.
+
+Ne pas assimiler les APK issues des deux builds distincts ni confondre l'empreinte du ZIP avec celle de l'APK.
