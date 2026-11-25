@@ -177,7 +177,6 @@ if __name__ == "__main__":
         assert '"https://appassets.androidplatform.net/assets/web/atlas-home.html"' in installed_activity
         assert 'https://appassets.androidplatform.net/assets/web/index.html' not in installed_activity
         assert '/assets/web/atlas-home.html' in installed_activity
-        assert 'MainActivity.kt' in str(activity)
 
         # Test --force with source == destination in a separate self-hosted fixture.
         self_host = Path(tmp) / "self-hosted"
@@ -197,6 +196,7 @@ if __name__ == "__main__":
         patched_activity = activity.read_text(encoding="utf-8")
         assert "/assets/web/atlas-home.html" in patched_activity
         actual_activity = (ROOT.parents[1] / "android/app/src/main/java/uk/megalith/lidar/MainActivity.kt").read_text(encoding="utf-8")
+        assert 'https://appassets.androidplatform.net/assets/web/atlas-home.html' in actual_activity
         assert "MAX_EXPORT_BYTES" in actual_activity
         for lifecycle_contract in ("activityDestroyed", "override fun onDestroy()", "webView.destroy()", "pendingGeoCallback = null", "fileUploadCallback = null"):
             assert lifecycle_contract in actual_activity, lifecycle_contract
