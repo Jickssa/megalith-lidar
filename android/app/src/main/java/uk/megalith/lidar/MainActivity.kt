@@ -608,7 +608,7 @@ class MainActivity : Activity() {
     companion object {
         private const val APP_HOST = "appassets.androidplatform.net"
         private const val START_URL =
-            "https://appassets.androidplatform.net/assets/web/index.html"
+            "https://appassets.androidplatform.net/assets/web/atlas-home.html"
         private const val REMOTE_DIAG_BASE =
             "https://raw.githubusercontent.com/GlassOnTin/megalith-lidar/main/docs/diagnostics/"
         private const val REQ_LOCATION_PERMISSION = 1001
