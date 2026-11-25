@@ -78,3 +78,5 @@ Le renommage des dossiers garantit une atomicité par dossier et une restauratio
 ## Cycle de vie Android
 
 `MainActivity.onDestroy()` neutralise les callbacks de permission et de sélecteur de fichier, arrête les chargements et détruit le WebView. Les exports en cours peuvent terminer leur écriture sur le thread dédié, mais le résultat est supprimé au lieu d'être partagé ou affiché si l'activité a été détruite. Le validateur vérifie les contrats de nettoyage et le build Gradle confirme la compilation Kotlin ; cela ne remplace pas un essai sur appareil Android physique.
+
+- Le rendu agrégé est recalculé sur `moveend` ; les cellules écran suivent ainsi le viewport après un déplacement à zoom constant.

@@ -1313,7 +1313,7 @@
         }
       });
     }
-    map.on("zoomend",()=>{updateZoomDependentPaneOpacity();if(currentTab!=="stats")renderActiveView(false);});
+    map.on("moveend",()=>{updateZoomDependentPaneOpacity();if(currentTab!=="stats")renderActiveView(false);});
 
     let ancientRoadsGeoJSON = null;
     async function ensureAncientRoadsLoaded() {

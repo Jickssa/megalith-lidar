@@ -53,6 +53,7 @@ assert.equal(first.knownCount, 1, 'known-site count remains explicit');
 assert.equal(first.selected, true, 'selected record state remains discoverable in aggregate');
 
 assert.ok(ukHtml.includes('markerZoom<11'), 'aggregate markers are used below detail zoom');
+assert.ok(ukHtml.includes('map.on("moveend"'), 'screen-cell clusters are recalculated after panning and zooming');
 assert.ok(ukHtml.includes('Math.min(11,markerZoom+2)'), 'cluster click zooms into the grouped area');
 assert.ok(ukHtml.includes('new ShapeMarker'), 'historical individual marker rendering remains available');
 assert.ok(!ukHtml.includes('130279.0'), 'hard-coded national percentage denominator has been removed');
