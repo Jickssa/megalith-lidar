@@ -45,6 +45,8 @@ jobs:
         run: node --check integrations/monolith-france/web/app.js
       - name: Web logic regression tests
         run: node integrations/monolith-france/scripts/test_web_logic.js
+      - name: International atlas regression tests
+        run: node integrations/monolith-france/scripts/test_international_contracts.js
       - name: Python syntax
         run: python -m py_compile integrations/monolith-france/scripts/*.py
       - name: Installer regression fixture

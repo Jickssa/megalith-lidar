@@ -46,3 +46,11 @@ Artefacts :
 - La cause du rectangle sombre de la carte France n'est pas établie par capture seule.
 - POI IGN et IA France restent désactivés.
 - Aucun test physique Android ni test de mise à jour d'une application déjà installée avec vérification de certificat n'est revendiqué.
+
+
+## Contrôles supplémentaires
+
+- Regroupement cartographique UK par cellule écran avec catégories séparées, indicateur de sélection et retour aux marqueurs individuels à partir du zoom 11.
+- Suppression du ratio fondé sur la constante 130279.0 ; seules les surfaces et quantités provenant du résumé de campagne sont présentées.
+- Distinction explicite entre profil territorial GB et emprise de la campagne publiée (Angleterre).
+- Les erreurs de tuiles IGN, OSM et LiDAR sont désormais signalées. La cause du rectangle sombre reste à confirmer par un essai visuel réel sur les services et emprises ciblés.

@@ -60,7 +60,9 @@
     "originalCandidateSystem": true,
     "originalInspectors": true,
     "originalFieldExports": true,
-    "aiModels": "UK-only; not portable to France"
+    "aiModels": "UK model; current published campaign extent: England. Not portable to France.",
+    "activeSurveyExtent": "England",
+    "activeSurveyExtentNote": "This profile represents the United Kingdom; the currently published model and candidate survey queue cover England only and must not be interpreted as complete UK coverage."
   },
   "licences": [
     {

@@ -3,13 +3,58 @@
 const CFG='/assets/web/france/config/france-config.json', SRC='/assets/web/france/config/data-sources.json';
 const STORE='monolith.france.observations.v1', GEO='https://data.geopf.fr/geocodage/search';
 const OVERPASS=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter'];
-const $=id=>document.getElementById(id), S={map:null,cfg:null,taxonomy:null,base:{},over:{},markers:null,results:[],observations:[],pending:null,busy:false,searchId:0,searchController:null};
+const $=id=>document.getElementById(id), S={map:null,cfg:null,taxonomy:null,base:{},over:{},markers:null,results:[],observations:[],pending:null,busy:false,searchId:0,searchController:null,tileHealth:{}};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function toast(s){const e=$('toast');e.textContent=s;e.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('show'),3200)}
 async function getJson(url,opts={},timeout=18000){const c=new AbortController(),t=setTimeout(()=>c.abort(),timeout);try{const r=await fetch(url,{...opts,signal:c.signal,cache:'no-store'});if(!r.ok)throw Error('HTTP '+r.status);return await r.json()}finally{clearTimeout(t)}}
 const tile=layer=>'https://data.geopf.fr/wmts?SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&LAYER='+encodeURIComponent(layer)+'&STYLE=normal&FORMAT=image/png&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}';
-function initMap(){if(!window.L)throw Error('Leaflet absent');const d=S.cfg.defaultMap;S.map=L.map('map',{center:d.center,zoom:d.zoom,minZoom:d.minZoom,maxZoom:d.maxZoom,preferCanvas:true});S.base.ign=L.tileLayer(tile('GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2'),{attribution:'© IGN — Géoplateforme'});S.base.osm=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap contributors'});S.base.ign.addTo(S.map);
-S.over.mnt=L.tileLayer(tile('IGNF_LIDAR-HD_MNT_ELEVATION.ELEVATIONGRIDCOVERAGE.SHADOW'),{opacity:.82,attribution:'© IGN — LiDAR HD'});S.over.mns=L.tileLayer(tile('IGNF_LIDAR-HD_MNS_ELEVATION.ELEVATIONGRIDCOVERAGE.SHADOW'),{opacity:.8,attribution:'© IGN — LiDAR HD'});S.over.mnh=L.tileLayer(tile('IGNF_LIDAR-HD_MNH_ELEVATION.ELEVATIONGRIDCOVERAGE.SHADOW'),{opacity:.8,attribution:'© IGN — LiDAR HD'});S.markers=L.featureGroup().addTo(S.map);S.map.on('mousemove',e=>$('cursorCoordinates').textContent=e.latlng.lat.toFixed(5)+', '+e.latlng.lng.toFixed(5));S.map.on('click',e=>S.pending=e.latlng);$('mapStatus').textContent='Plan IGN prêt — France métropolitaine'}
+function tileHealthLabel(state){
+ if(!state)return 'En attente';
+ if(state.loading)return 'Chargement…';
+ if(state.failed>0)return 'Partiel — '+state.failed+' erreur(s), '+state.loaded+' tuile(s) reçue(s)';
+ if(state.completed&&state.loaded===0)return 'Aucune tuile reçue';
+ if(state.loaded>0)return 'OK — '+state.loaded+' tuile(s) reçue(s)';
+ return 'En attente';
+}
+function buildTileHealthSummary(baseKey,states,activeLidarKeys){
+ const baseName=baseKey==='osm'?'OpenStreetMap':'Plan IGN';
+ const base=baseName+' : '+tileHealthLabel(states['base-'+baseKey]);
+ const active=activeLidarKeys||[];
+ if(!active.length)return base+' · Couches LiDAR désactivées';
+ const labels={mnt:'MNT',mns:'MNS',mnh:'MNH'};
+ return [base].concat(active.map(key=>(labels[key]||key)+' : '+tileHealthLabel(states['lidar-'+key]))).join(' · ');
+}
+function watchTileLayer(layer,key){
+ const state={loading:false,loaded:0,failed:0,completed:false};S.tileHealth[key]=state;
+ layer.on('loading',()=>{state.loading=true;state.loaded=0;state.failed=0;state.completed=false;updateTileHealth()});
+ layer.on('tileload',()=>{state.loaded++;updateTileHealth()});
+ layer.on('tileerror',()=>{state.failed++;updateTileHealth()});
+ layer.on('load',()=>{state.loading=false;state.completed=true;updateTileHealth()});
+}
+function updateTileHealth(){
+ const note=$('tileHealthNote');if(!note)return;
+ const baseKey=$('basemapSelect')?.value||'ign';
+ const active=['mnt','mns','mnh'].filter(key=>$('layer'+key[0].toUpperCase()+key.slice(1))?.checked);
+ note.textContent=buildTileHealthSummary(baseKey,S.tileHealth,active);
+ note.dataset.state=Object.values(S.tileHealth).some(state=>state.failed>0)?'warning':'observed';
+}
+
+function initMap(){
+ if(!window.L)throw Error('Leaflet absent');
+ const d=S.cfg.defaultMap;
+ S.map=L.map('map',{center:d.center,zoom:d.zoom,minZoom:d.minZoom,maxZoom:d.maxZoom,preferCanvas:true});
+ S.base.ign=L.tileLayer(tile('GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2'),{attribution:'© IGN — Géoplateforme'});
+ S.base.osm=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap contributors'});
+ watchTileLayer(S.base.ign,'base-ign');watchTileLayer(S.base.osm,'base-osm');S.base.ign.addTo(S.map);
+ S.over.mnt=L.tileLayer(tile('IGNF_LIDAR-HD_MNT_ELEVATION.ELEVATIONGRIDCOVERAGE.SHADOW'),{opacity:.82,attribution:'© IGN — LiDAR HD'});
+ S.over.mns=L.tileLayer(tile('IGNF_LIDAR-HD_MNS_ELEVATION.ELEVATIONGRIDCOVERAGE.SHADOW'),{opacity:.8,attribution:'© IGN — LiDAR HD'});
+ S.over.mnh=L.tileLayer(tile('IGNF_LIDAR-HD_MNH_ELEVATION.ELEVATIONGRIDCOVERAGE.SHADOW'),{opacity:.8,attribution:'© IGN — LiDAR HD'});
+ watchTileLayer(S.over.mnt,'lidar-mnt');watchTileLayer(S.over.mns,'lidar-mns');watchTileLayer(S.over.mnh,'lidar-mnh');
+ S.markers=L.featureGroup().addTo(S.map);
+ S.map.on('mousemove',e=>$('cursorCoordinates').textContent=e.latlng.lat.toFixed(5)+', '+e.latlng.lng.toFixed(5));
+ S.map.on('click',e=>S.pending=e.latlng);
+ $('mapStatus').textContent='Plan IGN prêt — France métropolitaine';updateTileHealth();
+}
 function item(f,source){
  const p=f.properties||f,t=f.tags||{},g=f.geometry||{};
  let lat=f.lat??f.center?.lat??g.coordinates?.[1],lon=f.lon??f.center?.lon??g.coordinates?.[0];lat=Number(lat);lon=Number(lon);
@@ -319,14 +364,14 @@ function events(){
  $('tab-map').addEventListener('click',()=>showStep('map'));$('tab-list').addEventListener('click',()=>showStep('list'));$('tab-details').addEventListener('click',()=>showStep('details'));
  $('candidateFilter').addEventListener('input',renderCandidates);['candidateCategoryFilter','candidateSourceFilter','candidateVerificationFilter'].forEach(id=>$(id).addEventListener('change',renderCandidates));
  $('searchButton').addEventListener('click',search);$('searchInput').addEventListener('keydown',e=>{if(e.key==='Enter')search()});
- $('basemapSelect').addEventListener('change',e=>{Object.values(S.base).forEach(l=>S.map.removeLayer(l));S.base[e.target.value].addTo(S.map)});
- [['layerMnt','mnt'],['layerMns','mns'],['layerMnh','mnh']].forEach(([id,k])=>$(id).addEventListener('change',e=>e.target.checked?S.over[k].addTo(S.map):S.map.removeLayer(S.over[k])));
+ $('basemapSelect').addEventListener('change',e=>{Object.values(S.base).forEach(l=>S.map.removeLayer(l));S.base[e.target.value].addTo(S.map);updateTileHealth()});
+ [['layerMnt','mnt'],['layerMns','mns'],['layerMnh','mnh']].forEach(([id,k])=>$(id).addEventListener('change',e=>{e.target.checked?S.over[k].addTo(S.map):S.map.removeLayer(S.over[k]);updateTileHealth()}));
  $('locateButton').addEventListener('click',()=>{if(!navigator.geolocation)return toast('Géolocalisation indisponible');navigator.geolocation.getCurrentPosition(p=>S.map.setView([p.coords.latitude,p.coords.longitude],15),e=>toast('Position indisponible : '+e.message),{timeout:10000})});
  $('themeToggle').addEventListener('click',()=>applyTheme(document.documentElement.dataset.theme==='dark'?'light':'dark'));
  $('addObservation').addEventListener('click',addObs);$('exportObservations').addEventListener('click',exportObs);$('importGeoJson').addEventListener('change',e=>importObs(e.target.files?.[0]));
  $('cancelDialog').addEventListener('click',()=>$('observationDialog').close());$('observationForm').addEventListener('submit',e=>{e.preventDefault();saveObs()});
 }
 async function init(){try{[S.cfg,S.taxonomy]=await Promise.all([getJson(CFG),getJson('/assets/web/france/config/archaeology-taxonomy.fr.json')]);S.sources=await getJson(SRC);initMap();events();loadObs();let theme='light';try{theme=localStorage.getItem('monolith.ui.theme.v1')||'light'}catch(_e){}applyTheme(theme);renderCandidates();renderInspector();showStep('map');$('mapStatus').textContent='Module prêt — recherches à la demande'}catch(e){$('mapStatus').textContent='Initialisation impossible : '+e.message;toast('Erreur au démarrage du module France.')}}
-if(typeof module!=='undefined'&&module.exports)module.exports={getStorageLimits,isValidObservationFeature,parseObservationImport,isGeoJsonFile,getSearchSettings,buildPlaceSearchUrl,normalizeTaxonomy,escapeOverpassValue,escapeOverpassRegex,buildOverpassTagSelector,queryBoxFromBounds,buildOverpassQuery,osmElementToItem,deduplicateOsmItems,buildPoiAutocompleteUrl,normalizeResultRecord,siteRecordToFeature};
+if(typeof module!=='undefined'&&module.exports)module.exports={getStorageLimits,isValidObservationFeature,parseObservationImport,isGeoJsonFile,getSearchSettings,buildPlaceSearchUrl,normalizeTaxonomy,escapeOverpassValue,escapeOverpassRegex,buildOverpassTagSelector,queryBoxFromBounds,buildOverpassQuery,osmElementToItem,deduplicateOsmItems,buildPoiAutocompleteUrl,normalizeResultRecord,siteRecordToFeature,tileHealthLabel,buildTileHealthSummary};
 if(typeof document!=='undefined')document.addEventListener('DOMContentLoaded',init);
 })();

@@ -65,3 +65,12 @@ Les SHA-256 des archives artefacts sont différents car les ZIP d'artefacts sont
 - POI IGN non validé et détection IA France désactivée.
 - Tests réseau et emprises de référence LiDAR restent à réaliser.
 - Aucun test d'installation/mise à jour sur appareil Android physique, aucune vérification de compatibilité du certificat de signature avec une installation existante ne sont revendiqués.
+
+
+## Tranche suivante — agrégation UK et diagnostic des tuiles France
+
+- Le moteur UK conserve ses données, filtres, tables, sélection et inspecteur. Sous le zoom 11, les candidats sont regroupés visuellement par cellule écran ; cliquer un groupe augmente le zoom, puis les marqueurs détaillés historiques réapparaissent au zoom 11. Les objets GeoJSON ne sont ni supprimés ni fusionnés.
+- La progression UK présente les carrés terminés et la surface calculée par le producteur (`total_scanned_area_km2`), sans ratio national codé en dur.
+- Le profil GB précise que le territoire déclaré est le Royaume-Uni, tandis que la campagne actuellement publiée couvre l'Angleterre.
+- Le module France affiche les chargements, tuiles reçues et erreurs des fonds et couches LiDAR. Une réponse HTTP réussie ne prouve pas à elle seule que la tuile contient une donnée LiDAR utile.
+- Validation GitHub Actions de cette tranche : en attente.

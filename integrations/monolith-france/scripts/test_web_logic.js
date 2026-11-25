@@ -86,3 +86,15 @@ const r=normalizeResultRecord({id:'osm:node:7',title:'Dolmen test',kind:'megalit
 assert.equal(r.id,'osm:node:7');assert.equal(r.verification,'unverified');assert.deepEqual(siteRecordToFeature(r).geometry.coordinates,[0.2,47.2]);assert.equal(normalizeResultRecord({title:'invalid',lat:95,lon:0},1,'IGN'),null);console.log('PASS — modèle commun de candidat.');
 
 assert.equal(r.category,'megaliths','catégorie territoriale conservée pour le filtre STEP 1');
+
+const tileState={
+ 'base-ign':{loading:false,loaded:18,failed:0,completed:true},
+ 'base-osm':{loading:false,loaded:0,failed:0,completed:false},
+ 'lidar-mnt':{loading:false,loaded:6,failed:2,completed:true}
+};
+assert.equal(tileHealthLabel(tileState['base-ign']),'OK — 18 tuile(s) reçue(s)');
+assert.match(tileHealthLabel(tileState['lidar-mnt']),/2 erreur/);
+assert.match(tileHealthLabel({loading:true,loaded:1,failed:0,completed:false}),/Chargement/);
+assert.match(buildTileHealthSummary('ign',tileState,['mnt']),/Plan IGN : OK/);
+assert.match(buildTileHealthSummary('osm',tileState,[]),/Couches LiDAR désactivées/);
+console.log('PASS — diagnostic des chargements et erreurs de tuiles IGN/OSM/LiDAR.');
