@@ -166,3 +166,29 @@ SHA-256 des ZIP d'artefacts :
 - PR : `1ecbfd790547e78681c737fcda5228982eefd12e66ef88d8792c3cec85e2b3cf`.
 
 Les APK push et PR sont issues de builds séparés ; leurs empreintes ne sont pas supposées identiques.
+
+## Validation CI — PR #3, run 250 (25 novembre 2026)
+
+Branche de correction : `fix/monolith-international-release-safety`  
+Commit de la PR au moment du run : `0f1348e704cb26349295868a61c8623cbc9662ff`  
+Merge ref construit par GitHub Actions : `4993c24f19bb94f58da70784729b4aec8c60f049`  
+Run : https://github.com/Jickssa/megalith-lidar/actions/runs/45714566991
+
+Les deux jobs du run 250 ont terminé en succès :
+- Validation statique France, syntaxe JS/Python, tests web, contrats internationaux et test de régression de l'installateur : succès.
+- Compilation Android Debug `assembleDebug` : `BUILD SUCCESSFUL`, 34 tâches exécutées.
+- Contrôle des ressources internationales, intégrité ZIP, `zipalign` et `apksigner verify` : succès.
+
+Artefact Debug : https://github.com/Jickssa/megalith-lidar/actions/runs/45714566991/artifacts/15069122341  
+ID : `15069122341`  
+Taille archive artefact : 19 011 368 octets  
+Taille APK : 19 052 391 octets  
+SHA-256 APK : `f4282fec8bf80085123a3146557142bd577c738f3a391a21b5b0c124acb68d7c`
+
+Inspection de l'APK téléchargée : CRC ZIP valide ; présence du sélecteur, pages UK/France, profils FR/GB, langues `fr-FR`/`en-GB`, application France, Leaflet, marqueurs et corpus UK (candidats, voies romaines, routes, comtés, enclosures, exports OsmAnd). Le DEX contient la chaîne `/assets/web/atlas-home.html`.
+
+Limites : cette APK est une APK Debug signée par le mécanisme Debug du build, pas une APK Release ; son certificat n'est pas une preuve de continuité avec la clé officielle historique. Aucun test d'installation sur appareil physique, aucun run Release R8, aucune signature officielle, aucun tag et aucune publication n'ont été réalisés.
+
+## Release candidate 3.3.0
+
+Préparation sur la PR #3 : `versionName 3.3.0`, `versionCode 321`, changelog `321.txt`. Le workflow `release.yml` a été converti en déclenchement manuel de build candidat non publiant. Ses vérifications sont en cours de renforcement ; il ne doit pas être considéré comme validé tant qu'un run Release candidate n'a pas réussi.
