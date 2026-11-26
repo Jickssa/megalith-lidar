@@ -238,3 +238,26 @@ Le dépôt amont public `GlassOnTin/megalith-lidar` publie une release v3.2.0. S
 Le workflow `release.yml` comprend `build-only` (par défaut, unsigned candidate) et `publish` (job distinct exigeant confirmation explicite, quatre secrets présents, HEAD stable, tag libre et certificat historique). Il ne déclenche aucune publication en mode build-only.
 
 Le dernier correctif du contrôle de tag (sémantique `git ls-remote`: code 0 + sortie vide signifie tag absent) est postérieur au run #260 et doit encore être validé par CI.
+## Validation CI — PR #3 / run 262
+
+Commit du run : `d2e47e04c9a8279659ac31f88b57fab2c34207fb`  
+Run : https://github.com/Jickssa/megalith-lidar/actions/runs/45728327008
+
+Les deux jobs ont terminé en succès : le job statique (dont le parse YAML de `release.yml`) et le build Android Debug (`assembleDebug`, ressources APK, zipalign, apksigner et upload).
+
+Artefact Debug : https://github.com/Jickssa/megalith-lidar/actions/runs/45728327008/artifacts/15075911482 (ID `15075911482`).
+- APK : 19 055 023 octets.
+- SHA-256 APK : `9814f8440cc18707418d75e0a527c0b05793073e10964dee3e9ce3a2e0c0bfbb`.
+- SHA-256 sidecar recopié et vérifié après téléchargement : identique.
+- CRC ZIP : valide.
+- Ressources contrôlées : 40/40 présentes ; routes FR et GB présentes ; `aiDetection` France reste `false` ; route Android de démarrage présente dans les DEX.
+
+Le commit `135efda8...` a aussi passé run 260 avec succès. La correction la plus récente du test d'absence de tag (`git ls-remote`: statut 0 + sortie vide signifie tag inexistant) est intégrée dans le commit `e0015f8...`, inclus dans `d2e47e04...` et donc couverte par run 262.
+
+## Release candidate 3.3.0 — état
+
+Le workflow `release.yml` a deux modes : `build-only` (défaut, candidate Release non signée, sans tag ni publication) et `publish` (job distinct exigeant `PUBLISH_PUBLIC_RELEASE`, quatre secrets présents, SHA de branche immuable, tag libre, certificat historique).
+
+Le runner télécharge l'APK publique amont `GlassOnTin/megalith-lidar` v3.2.0, vérifie son digest GitHub `cf6362d6c5513c08740f2b0f58ac3178f29b11f0584117a2b3bd2911d6bdd3dd`, le package `uk.megalith.lidar` / code 320 / nom 3.2.0, puis calcule l'empreinte du certificat via `apksigner`. L'APK signée 3.3.0 devra avoir la même empreinte.
+
+Limites : le workflow Release candidate n'a pas encore été déclenché ; aucune APK Release R8 non signée candidate n'a été produite/inspectée ; aucune APK signée 3.3.0, aucun tag `v3.3.0` et aucune GitHub Release n'existent dans le fork. Les secrets n'ont pas été inspectés via l'API et aucune valeur n'a été consultée. Aucun test physique Android.
