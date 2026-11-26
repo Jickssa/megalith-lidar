@@ -192,3 +192,24 @@ Limites : cette APK est une APK Debug signée par le mécanisme Debug du build, 
 ## Release candidate 3.3.0
 
 Préparation sur la PR #3 : `versionName 3.3.0`, `versionCode 321`, changelog `321.txt`. Le workflow `release.yml` a été converti en déclenchement manuel de build candidat non publiant. Ses vérifications sont en cours de renforcement ; il ne doit pas être considéré comme validé tant qu'un run Release candidate n'a pas réussi.
+## Validation Android Debug — PR #3 / run 250
+
+Branche de correction : `fix/monolith-international-release-safety`.
+Commit PR : `0f1348e704cb26349295868a61c8623cbc9662ff` ; merge ref du run : `4993c24f19bb94f58da70784729b4aec8c60f049`.
+Run : https://github.com/Jickssa/megalith-lidar/actions/runs/45714566991
+
+Les deux jobs sont terminés en succès : validation statique France/international et compilation Android Debug. `assembleDebug` a terminé avec `BUILD SUCCESSFUL` (34 tâches exécutées). Le test APK a contrôlé les routes internationales, les ressources France et l'intégrité ZIP ; `zipalign -c -v 4` et `apksigner verify --verbose` ont réussi.
+
+Artefact Debug : https://github.com/Jickssa/megalith-lidar/actions/runs/45714566991/artifacts/15069122341 (ID `15069122341`).
+- APK : 19 052 391 octets.
+- SHA-256 APK : `f4282fec8bf80085123a3146557142bd577c738f3a391a21b5b0c124acb68d7c`.
+- SHA-256 recalculé après téléchargement : identique.
+- Archive ZIP artefact : 19 011 368 octets ; digest GitHub `sha256:8414e38d85602b76718d5dce503541d948f8090a1836f3868deea9846cd8733f` (à ne pas confondre avec le SHA de l'APK).
+
+Inspection indépendante de l'APK : CRC ZIP valide ; sélecteur `atlas-home.html`, pages France/UK, atlas France, profils `FR.json` et `GB.json`, langues FR/EN, Leaflet et marqueurs ; données UK de candidats, romaines, enclosures, routes, comtés et exports OsmAnd ; chaîne du sélecteur présente dans les DEX. Le profil France a `aiDetection: false` ; le profil UK précise une campagne active limitée à l'Angleterre.
+
+Cette APK reste une Debug signée par le mécanisme de build Debug. Le certificat de debug n'est pas la preuve du certificat officiel historique. Pas de test sur appareil physique, pas de build Release validé et pas de publication à ce stade.
+
+## Préparation Release candidat 3.3.0
+
+Version préparée : `versionName 3.3.0`, `versionCode 321`, changelog `321.txt`, tag réservé `v3.3.0`. Le workflow candidat a été corrigé pour installer France avant le build, vérifier les ressources UK/France, valider les routes au bon niveau (HTML/JS pour GB, DEX pour START_URL) et vérifier zipalign. Le run candidat Release doit encore être exécuté depuis un commit contenant ces changements et les corrections de la PR intégrées dans la branche source.
