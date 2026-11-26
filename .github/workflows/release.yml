@@ -33,7 +33,9 @@ permissions:
 
 jobs:
   build-release-candidate:
-    name: Build and inspect unsigned release candidate (no publication)
+    outputs:
+      source_sha: ${{ steps.identity.outputs.source_sha }}
+    name: Build and inspect unsigned release candidate
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
@@ -207,6 +209,8 @@ jobs:
           print("Release APK ZIP, routes, France AI guard and territory assets verified")
           PY
           "${ANDROID_HOME}/build-tools/35.0.0/zipalign" -c -v 4 "$APK"
+          BADGING="$("${ANDROID_HOME}/build-tools/35.0.0/aapt" dump badging "$APK")"
+          grep -Fq "package: name='uk.megalith.lidar' versionCode='321' versionName='3.3.0'" <<< "$BADGING" || { echo "APK packageId/version metadata mismatch"; exit 1; }
 
       - name: Upload unsigned release candidate (non-publishing)
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -218,8 +222,12 @@ jobs:
 
       - name: Record build provenance
         run: |
-          echo "Build-only workflow: no signing, no tag creation, no GitHub Release publication." >> "$GITHUB_STEP_SUMMARY"
           echo "Source SHA: ${{ steps.identity.outputs.source_sha }}" >> "$GITHUB_STEP_SUMMARY"
+          if [[ "${{ inputs.mode }}" == "build-only" ]]; then
+            echo "Non-publishing candidate only: no signing, no tag creation, no GitHub Release." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Unsigned candidate verified; controlled signing/publication job will run with separate confirmation and certificate gates." >> "$GITHUB_STEP_SUMMARY"
+          fi
 
   publish-release:
     name: Sign and publish the verified Android release
@@ -229,6 +237,8 @@ jobs:
     timeout-minutes: 25
     permissions:
       contents: write
+      id-token: write
+      attestations: write
     env:
       RELEASE_TAG: ${{ inputs.tag }}
       SOURCE_REF: ${{ inputs.source_ref }}
@@ -319,6 +329,11 @@ jobs:
           (cd release && sha256sum "$(basename "$SIGNED_APK")" > SHA256SUMS)
           echo "certificate_sha256=$ACTUAL_CERT" >> "$GITHUB_OUTPUT"
           echo "apk_sha256=$(sha256sum "$SIGNED_APK" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+
+      - name: Attest signed APK provenance
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: release/*.apk
 
       - name: Publish the exact validated commit as a public GitHub Release
         env:
