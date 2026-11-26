@@ -1,6 +1,16 @@
 name: Android Release Candidate
 
 on:
+  push:
+    branches:
+      - feature/monolith-international-next
+    paths:
+      - ".github/workflows/release.yml"
+      - "android/**"
+      - "scripts/prepare_android_assets.py"
+      - "scripts/export_osmand_plugin.py"
+      - "integrations/monolith-france/**"
+      - "fastlane/metadata/android/en-US/changelogs/**"
   workflow_dispatch:
     inputs:
       source_ref:
@@ -39,8 +49,8 @@ jobs:
     steps:
       - name: Validate inputs and reject existing tags
         env:
-          SOURCE_REF: ${{ inputs.source_ref }}
-          RELEASE_TAG: ${{ inputs.tag }}
+          SOURCE_REF: ${{ inputs.source_ref || github.ref_name }}
+          RELEASE_TAG: ${{ inputs.tag || 'v3.3.0' }}
         run: |
           set -euo pipefail
           [[ "$SOURCE_REF" == "feature/monolith-international-next" ]] || { echo "source_ref must be feature/monolith-international-next"; exit 1; }
@@ -49,7 +59,7 @@ jobs:
       - name: Checkout exact selected source ref
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ inputs.source_ref }}
+          ref: ${{ inputs.source_ref || github.ref_name }}
           fetch-depth: 0
           sparse-checkout: |
             /*
@@ -233,7 +243,7 @@ jobs:
       - name: Upload unsigned release candidate (non-publishing)
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: megalith-lidar-release-candidate-${{ inputs.tag }}
+          name: megalith-lidar-release-candidate-${{ inputs.tag || 'v3.3.0' }}
           path: android/app/build/outputs/apk/release/app-release-unsigned.apk
           if-no-files-found: error
           retention-days: 14
@@ -241,7 +251,7 @@ jobs:
       - name: Record build provenance
         run: |
           echo "Source SHA: ${{ steps.identity.outputs.source_sha }}" >> "$GITHUB_STEP_SUMMARY"
-          if [[ "${{ inputs.mode }}" == "build-only" ]]; then
+          if [[ "${{ inputs.mode || 'build-only' }}" == "build-only" ]]; then
             echo "Non-publishing candidate only: no signing, no tag creation, no GitHub Release." >> "$GITHUB_STEP_SUMMARY"
           else
             echo "Unsigned candidate verified; controlled signing/publication job will run with separate confirmation and certificate gates." >> "$GITHUB_STEP_SUMMARY"
@@ -250,7 +260,7 @@ jobs:
   publish-release:
     name: Sign and publish the verified Android release
     needs: build-release-candidate
-    if: ${{ inputs.mode == 'publish' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'publish' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     permissions:
