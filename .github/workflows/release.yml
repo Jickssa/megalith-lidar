@@ -96,6 +96,9 @@ jobs:
       - name: Install Python build dependency
         run: python3 -m pip install --disable-pip-version-check "Pillow>=10,<13"
 
+      - name: Install France and International assets into Android project
+        run: python3 integrations/monolith-france/scripts/install_into_megalith_lidar_android.py "$GITHUB_WORKSPACE" --force
+
       - name: Build release APK with R8
         working-directory: android
         run: |
@@ -161,14 +164,22 @@ jobs:
               names = set(apk.namelist())
               missing = [name for name in required if name not in names]
               if missing: raise SystemExit("APK assets missing:\n" + "\n".join(missing))
-              start = "uk/megalith/lidar/MainActivity.class"
-              # Kotlin compiles MainActivity to MainActivity.class; verify startup string is retained somewhere in dex.
+              chooser = apk.read("assets/web/atlas-home.html").decode("utf-8")
+              expected_routes = (
+                  "FR:'/assets/web/france/web/index.html'",
+                  "GB:'/assets/web/index.html'",
+              )
+              for route in expected_routes:
+                  if route not in chooser: raise SystemExit(f"Selector route missing: {route}")
+              fr_profile = apk.read("assets/web/france/config/countries/profiles/FR.json").decode("utf-8")
+              gb_profile = apk.read("assets/web/france/config/countries/profiles/GB.json").decode("utf-8")
+              if '"aiDetection": false' not in fr_profile: raise SystemExit("France AI must remain disabled")
+              if '"atlasEntry": "/assets/web/index.html"' not in gb_profile: raise SystemExit("GB profile route mismatch")
               dex = [name for name in names if name.startswith("classes") and name.endswith(".dex")]
               if not dex: raise SystemExit("No DEX bytecode found")
               data = b"".join(apk.read(name) for name in dex)
               if b"/assets/web/atlas-home.html" not in data: raise SystemExit("Compiled DEX does not reference chooser start route")
-              if b"/assets/web/index.html" not in data: raise SystemExit("UK atlas route missing from DEX")
-          print("Release APK ZIP, routes and territory assets verified")
+          print("Release APK ZIP, routes, France AI guard and territory assets verified")
           PY
           "${ANDROID_HOME}/build-tools/35.0.0/zipalign" -c -v 4 "$APK"
 
