@@ -261,3 +261,17 @@ Le workflow `release.yml` a deux modes : `build-only` (défaut, candidate Releas
 Le runner télécharge l'APK publique amont `GlassOnTin/megalith-lidar` v3.2.0, vérifie son digest GitHub `cf6362d6c5513c08740f2b0f58ac3178f29b11f0584117a2b3bd2911d6bdd3dd`, le package `uk.megalith.lidar` / code 320 / nom 3.2.0, puis calcule l'empreinte du certificat via `apksigner`. L'APK signée 3.3.0 devra avoir la même empreinte.
 
 Limites : le workflow Release candidate n'a pas encore été déclenché ; aucune APK Release R8 non signée candidate n'a été produite/inspectée ; aucune APK signée 3.3.0, aucun tag `v3.3.0` et aucune GitHub Release n'existent dans le fork. Les secrets n'ont pas été inspectés via l'API et aucune valeur n'a été consultée. Aucun test physique Android.
+## Validation Android Debug — PR #3 / run 263
+
+Commit : `9f9fd09c8e2ac3d7d2e1fec04df77f3fe6a9c935`  
+Run : https://github.com/Jickssa/megalith-lidar/actions/runs/45728603246
+
+Jobs terminés en succès : validation statique, syntaxe YAML du workflow Release, validateurs France, tests JS et contrats internationaux, syntaxe Python, test de régression de l'installateur, compilation Android Debug, vérification APK, zipalign, apksigner et upload.
+
+Artefact Debug : https://github.com/Jickssa/megalith-lidar/actions/runs/45728603246/artifacts/15075971894 (ID `15075971894`).
+- APK : 19 055 755 octets.
+- SHA-256 APK : `8bffe5b982522a9fde083a676c44c583f5caef1338063fe5e6230fbbcd9ce777`.
+- SHA-256 sidecar recalculé après téléchargement : identique.
+- CRC ZIP valide ; 40/40 ressources présentes ; FR/GB routes présentes ; IA France toujours désactivée ; route de démarrage présente dans les DEX.
+
+Les runs #260, #262 et #263 sont en succès. Le run #263 valide le dernier commit de la PR #3.
