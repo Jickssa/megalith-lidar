@@ -213,3 +213,28 @@ Cette APK reste une Debug signée par le mécanisme de build Debug. Le certifica
 ## Préparation Release candidat 3.3.0
 
 Version préparée : `versionName 3.3.0`, `versionCode 321`, changelog `321.txt`, tag réservé `v3.3.0`. Le workflow candidat a été corrigé pour installer France avant le build, vérifier les ressources UK/France, valider les routes au bon niveau (HTML/JS pour GB, DEX pour START_URL) et vérifier zipalign. Le run candidat Release doit encore être exécuté depuis un commit contenant ces changements et les corrections de la PR intégrées dans la branche source.
+## Validation Android Debug — PR #3 / run 260
+
+Branche : `fix/monolith-international-release-safety`  
+Commit validé : `135efda8a856e606cde99fa99b031a67328ad376`  
+Run : https://github.com/Jickssa/megalith-lidar/actions/runs/45728033935
+
+Jobs terminés en succès : validation statique, syntaxe du workflow Release par Ruby/Psych, validateurs France, tests JavaScript et contrats internationaux, py_compile, test de régression installateur, compilation Android Debug, contrôle d'assets, zipalign et apksigner.
+
+Artefact Debug : https://github.com/Jickssa/megalith-lidar/actions/runs/45728033935/artifacts/15075352503 (ID `15075352503`).
+- APK : 19 054 091 octets.
+- SHA-256 APK : `7165081ae7b62e0865eb30b99826f1aa7b488ea3578e5969ca49d87739ac96ff`.
+- SHA-256 recalculé après téléchargement : identique.
+- ZIP APK testé : CRC valide.
+- Ressources requises : 40/40 ; sélecteur FR/GB, profils FR/GB, langues FR/EN, Leaflet, données UK et ressources France.
+- Route `atlas-home.html` présente dans les DEX ; profil FR avec `aiDetection: false`.
+
+Attention : il s'agit d'une APK Debug signée par le mécanisme Debug Android, pas de l'APK Release distribuable. Elle ne constitue pas une preuve de signature historique.
+
+## Référence de certificat historique
+
+Le dépôt amont public `GlassOnTin/megalith-lidar` publie une release v3.2.0. Son APK officiel porte le package `uk.megalith.lidar`, versionCode 320 / versionName 3.2.0. L'APK est publiée à `https://github.com/GlassOnTin/megalith-lidar/releases/download/v3.2.0/megalith-lidar-v3.2.0.apk` et GitHub annonce le digest `cf6362d6c5513c08740f2b0f58ac3178f29b11f0584117a2b3bd2911d6bdd3dd`. Le workflow candidate récupère désormais ce binaire public, vérifie son digest et ses métadonnées Android, puis extrait son certificat via `apksigner`. La signature Release v3.3.0 devra correspondre exactement à cette empreinte avant publication.
+
+Le workflow `release.yml` comprend `build-only` (par défaut, unsigned candidate) et `publish` (job distinct exigeant confirmation explicite, quatre secrets présents, HEAD stable, tag libre et certificat historique). Il ne déclenche aucune publication en mode build-only.
+
+Le dernier correctif du contrôle de tag (sémantique `git ls-remote`: code 0 + sortie vide signifie tag absent) est postérieur au run #260 et doit encore être validé par CI.
