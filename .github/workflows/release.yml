@@ -7,9 +7,17 @@ on:
     paths:
       - ".github/workflows/release.yml"
       - "android/**"
+      - "index.html"
+      - "docs/candidates.geojson"
+      - "docs/roman_candidates.geojson"
+      - "docs/enclosure_candidates.geojson"
+      - "docs/survey_summary.json"
       - "scripts/prepare_android_assets.py"
       - "scripts/export_osmand_plugin.py"
-      - "integrations/monolith-france/**"
+      - "scripts/check-r8-kept-classes.sh"
+      - "integrations/monolith-france/scripts/**"
+      - "integrations/monolith-france/web/**"
+      - "integrations/monolith-france/config/**"
       - "fastlane/metadata/android/en-US/changelogs/**"
   workflow_dispatch:
     inputs:
@@ -144,6 +152,7 @@ jobs:
           CERT_SHA256="$(printf '%s\n' "$VERIFY_OUTPUT" | sed -nE 's/.*Signer #1 certificate SHA-256 digest: ([A-Fa-f0-9:]+).*/\1/p' | head -n1 | tr -d ':' | tr '[:lower:]' '[:upper:]')"
           [[ "$CERT_SHA256" =~ ^[A-F0-9]{64}$ ]] || { echo "Could not extract official upstream certificate SHA-256"; exit 1; }
           echo "sha256=$CERT_SHA256" >> "$GITHUB_OUTPUT"
+          echo "Historical official signer SHA-256: $CERT_SHA256"
           echo "Historical official signer SHA-256: $CERT_SHA256" >> "$GITHUB_STEP_SUMMARY"
           rm -f "$OFFICIAL_APK"
 
