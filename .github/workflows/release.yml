@@ -70,7 +70,7 @@ jobs:
       - name: Record source identity and enforce version/tag consistency
         id: identity
         env:
-          RELEASE_TAG: ${{ inputs.tag }}
+          RELEASE_TAG: ${{ inputs.tag || 'v3.3.0' }}
         run: |
           set -euo pipefail
           SOURCE_SHA="$(git rev-parse HEAD)"
@@ -268,8 +268,8 @@ jobs:
       id-token: write
       attestations: write
     env:
-      RELEASE_TAG: ${{ inputs.tag }}
-      SOURCE_REF: ${{ inputs.source_ref }}
+      RELEASE_TAG: ${{ inputs.tag || 'v3.3.0' }}
+      SOURCE_REF: ${{ inputs.source_ref || github.ref_name }}
       SOURCE_SHA: ${{ needs.build-release-candidate.outputs.source_sha }}
       EXPECTED_CERT_SHA256: ${{ needs.build-release-candidate.outputs.historical_cert_sha256 }}
       KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 || secrets.RELEASE_KEYSTORE_BASE64 }}
