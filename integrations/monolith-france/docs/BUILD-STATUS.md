@@ -166,3 +166,112 @@ SHA-256 des ZIP d'artefacts :
 - PR : `1ecbfd790547e78681c737fcda5228982eefd12e66ef88d8792c3cec85e2b3cf`.
 
 Les APK push et PR sont issues de builds séparés ; leurs empreintes ne sont pas supposées identiques.
+
+## Validation CI — PR #3, run 250 (25 novembre 2026)
+
+Branche de correction : `fix/monolith-international-release-safety`  
+Commit de la PR au moment du run : `0f1348e704cb26349295868a61c8623cbc9662ff`  
+Merge ref construit par GitHub Actions : `4993c24f19bb94f58da70784729b4aec8c60f049`  
+Run : https://github.com/Jickssa/megalith-lidar/actions/runs/45714566991
+
+Les deux jobs du run 250 ont terminé en succès :
+- Validation statique France, syntaxe JS/Python, tests web, contrats internationaux et test de régression de l'installateur : succès.
+- Compilation Android Debug `assembleDebug` : `BUILD SUCCESSFUL`, 34 tâches exécutées.
+- Contrôle des ressources internationales, intégrité ZIP, `zipalign` et `apksigner verify` : succès.
+
+Artefact Debug : https://github.com/Jickssa/megalith-lidar/actions/runs/45714566991/artifacts/15069122341  
+ID : `15069122341`  
+Taille archive artefact : 19 011 368 octets  
+Taille APK : 19 052 391 octets  
+SHA-256 APK : `f4282fec8bf80085123a3146557142bd577c738f3a391a21b5b0c124acb68d7c`
+
+Inspection de l'APK téléchargée : CRC ZIP valide ; présence du sélecteur, pages UK/France, profils FR/GB, langues `fr-FR`/`en-GB`, application France, Leaflet, marqueurs et corpus UK (candidats, voies romaines, routes, comtés, enclosures, exports OsmAnd). Le DEX contient la chaîne `/assets/web/atlas-home.html`.
+
+Limites : cette APK est une APK Debug signée par le mécanisme Debug du build, pas une APK Release ; son certificat n'est pas une preuve de continuité avec la clé officielle historique. Aucun test d'installation sur appareil physique, aucun run Release R8, aucune signature officielle, aucun tag et aucune publication n'ont été réalisés.
+
+## Release candidate 3.3.0
+
+Préparation sur la PR #3 : `versionName 3.3.0`, `versionCode 321`, changelog `321.txt`. Le workflow `release.yml` a été converti en déclenchement manuel de build candidat non publiant. Ses vérifications sont en cours de renforcement ; il ne doit pas être considéré comme validé tant qu'un run Release candidate n'a pas réussi.
+## Validation Android Debug — PR #3 / run 250
+
+Branche de correction : `fix/monolith-international-release-safety`.
+Commit PR : `0f1348e704cb26349295868a61c8623cbc9662ff` ; merge ref du run : `4993c24f19bb94f58da70784729b4aec8c60f049`.
+Run : https://github.com/Jickssa/megalith-lidar/actions/runs/45714566991
+
+Les deux jobs sont terminés en succès : validation statique France/international et compilation Android Debug. `assembleDebug` a terminé avec `BUILD SUCCESSFUL` (34 tâches exécutées). Le test APK a contrôlé les routes internationales, les ressources France et l'intégrité ZIP ; `zipalign -c -v 4` et `apksigner verify --verbose` ont réussi.
+
+Artefact Debug : https://github.com/Jickssa/megalith-lidar/actions/runs/45714566991/artifacts/15069122341 (ID `15069122341`).
+- APK : 19 052 391 octets.
+- SHA-256 APK : `f4282fec8bf80085123a3146557142bd577c738f3a391a21b5b0c124acb68d7c`.
+- SHA-256 recalculé après téléchargement : identique.
+- Archive ZIP artefact : 19 011 368 octets ; digest GitHub `sha256:8414e38d85602b76718d5dce503541d948f8090a1836f3868deea9846cd8733f` (à ne pas confondre avec le SHA de l'APK).
+
+Inspection indépendante de l'APK : CRC ZIP valide ; sélecteur `atlas-home.html`, pages France/UK, atlas France, profils `FR.json` et `GB.json`, langues FR/EN, Leaflet et marqueurs ; données UK de candidats, romaines, enclosures, routes, comtés et exports OsmAnd ; chaîne du sélecteur présente dans les DEX. Le profil France a `aiDetection: false` ; le profil UK précise une campagne active limitée à l'Angleterre.
+
+Cette APK reste une Debug signée par le mécanisme de build Debug. Le certificat de debug n'est pas la preuve du certificat officiel historique. Pas de test sur appareil physique, pas de build Release validé et pas de publication à ce stade.
+
+## Préparation Release candidat 3.3.0
+
+Version préparée : `versionName 3.3.0`, `versionCode 321`, changelog `321.txt`, tag réservé `v3.3.0`. Le workflow candidat a été corrigé pour installer France avant le build, vérifier les ressources UK/France, valider les routes au bon niveau (HTML/JS pour GB, DEX pour START_URL) et vérifier zipalign. Le run candidat Release doit encore être exécuté depuis un commit contenant ces changements et les corrections de la PR intégrées dans la branche source.
+## Validation Android Debug — PR #3 / run 260
+
+Branche : `fix/monolith-international-release-safety`  
+Commit validé : `135efda8a856e606cde99fa99b031a67328ad376`  
+Run : https://github.com/Jickssa/megalith-lidar/actions/runs/45728033935
+
+Jobs terminés en succès : validation statique, syntaxe du workflow Release par Ruby/Psych, validateurs France, tests JavaScript et contrats internationaux, py_compile, test de régression installateur, compilation Android Debug, contrôle d'assets, zipalign et apksigner.
+
+Artefact Debug : https://github.com/Jickssa/megalith-lidar/actions/runs/45728033935/artifacts/15075352503 (ID `15075352503`).
+- APK : 19 054 091 octets.
+- SHA-256 APK : `7165081ae7b62e0865eb30b99826f1aa7b488ea3578e5969ca49d87739ac96ff`.
+- SHA-256 recalculé après téléchargement : identique.
+- ZIP APK testé : CRC valide.
+- Ressources requises : 40/40 ; sélecteur FR/GB, profils FR/GB, langues FR/EN, Leaflet, données UK et ressources France.
+- Route `atlas-home.html` présente dans les DEX ; profil FR avec `aiDetection: false`.
+
+Attention : il s'agit d'une APK Debug signée par le mécanisme Debug Android, pas de l'APK Release distribuable. Elle ne constitue pas une preuve de signature historique.
+
+## Référence de certificat historique
+
+Le dépôt amont public `GlassOnTin/megalith-lidar` publie une release v3.2.0. Son APK officiel porte le package `uk.megalith.lidar`, versionCode 320 / versionName 3.2.0. L'APK est publiée à `https://github.com/GlassOnTin/megalith-lidar/releases/download/v3.2.0/megalith-lidar-v3.2.0.apk` et GitHub annonce le digest `cf6362d6c5513c08740f2b0f58ac3178f29b11f0584117a2b3bd2911d6bdd3dd`. Le workflow candidate récupère désormais ce binaire public, vérifie son digest et ses métadonnées Android, puis extrait son certificat via `apksigner`. La signature Release v3.3.0 devra correspondre exactement à cette empreinte avant publication.
+
+Le workflow `release.yml` comprend `build-only` (par défaut, unsigned candidate) et `publish` (job distinct exigeant confirmation explicite, quatre secrets présents, HEAD stable, tag libre et certificat historique). Il ne déclenche aucune publication en mode build-only.
+
+Le dernier correctif du contrôle de tag (sémantique `git ls-remote`: code 0 + sortie vide signifie tag absent) est postérieur au run #260 et doit encore être validé par CI.
+## Validation CI — PR #3 / run 262
+
+Commit du run : `d2e47e04c9a8279659ac31f88b57fab2c34207fb`  
+Run : https://github.com/Jickssa/megalith-lidar/actions/runs/45728327008
+
+Les deux jobs ont terminé en succès : le job statique (dont le parse YAML de `release.yml`) et le build Android Debug (`assembleDebug`, ressources APK, zipalign, apksigner et upload).
+
+Artefact Debug : https://github.com/Jickssa/megalith-lidar/actions/runs/45728327008/artifacts/15075911482 (ID `15075911482`).
+- APK : 19 055 023 octets.
+- SHA-256 APK : `9814f8440cc18707418d75e0a527c0b05793073e10964dee3e9ce3a2e0c0bfbb`.
+- SHA-256 sidecar recopié et vérifié après téléchargement : identique.
+- CRC ZIP : valide.
+- Ressources contrôlées : 40/40 présentes ; routes FR et GB présentes ; `aiDetection` France reste `false` ; route Android de démarrage présente dans les DEX.
+
+Le commit `135efda8...` a aussi passé run 260 avec succès. La correction la plus récente du test d'absence de tag (`git ls-remote`: statut 0 + sortie vide signifie tag inexistant) est intégrée dans le commit `e0015f8...`, inclus dans `d2e47e04...` et donc couverte par run 262.
+
+## Release candidate 3.3.0 — état
+
+Le workflow `release.yml` a deux modes : `build-only` (défaut, candidate Release non signée, sans tag ni publication) et `publish` (job distinct exigeant `PUBLISH_PUBLIC_RELEASE`, quatre secrets présents, SHA de branche immuable, tag libre, certificat historique).
+
+Le runner télécharge l'APK publique amont `GlassOnTin/megalith-lidar` v3.2.0, vérifie son digest GitHub `cf6362d6c5513c08740f2b0f58ac3178f29b11f0584117a2b3bd2911d6bdd3dd`, le package `uk.megalith.lidar` / code 320 / nom 3.2.0, puis calcule l'empreinte du certificat via `apksigner`. L'APK signée 3.3.0 devra avoir la même empreinte.
+
+Limites : le workflow Release candidate n'a pas encore été déclenché ; aucune APK Release R8 non signée candidate n'a été produite/inspectée ; aucune APK signée 3.3.0, aucun tag `v3.3.0` et aucune GitHub Release n'existent dans le fork. Les secrets n'ont pas été inspectés via l'API et aucune valeur n'a été consultée. Aucun test physique Android.
+## Validation Android Debug — PR #3 / run 263
+
+Commit : `9f9fd09c8e2ac3d7d2e1fec04df77f3fe6a9c935`  
+Run : https://github.com/Jickssa/megalith-lidar/actions/runs/45728603246
+
+Jobs terminés en succès : validation statique, syntaxe YAML du workflow Release, validateurs France, tests JS et contrats internationaux, syntaxe Python, test de régression de l'installateur, compilation Android Debug, vérification APK, zipalign, apksigner et upload.
+
+Artefact Debug : https://github.com/Jickssa/megalith-lidar/actions/runs/45728603246/artifacts/15075971894 (ID `15075971894`).
+- APK : 19 055 755 octets.
+- SHA-256 APK : `8bffe5b982522a9fde083a676c44c583f5caef1338063fe5e6230fbbcd9ce777`.
+- SHA-256 sidecar recalculé après téléchargement : identique.
+- CRC ZIP valide ; 40/40 ressources présentes ; FR/GB routes présentes ; IA France toujours désactivée ; route de démarrage présente dans les DEX.
+
+Les runs #260, #262 et #263 sont en succès. Le run #263 valide le dernier commit de la PR #3.

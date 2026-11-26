@@ -1,0 +1,7 @@
+Monolith International 3.3.0:
+- Shared Android entry screen to select the France or United Kingdom atlas, with the country language options declared by each active profile.
+- United Kingdom atlas retains the existing England-focused LiDAR candidate research workflow, bundled datasets, historical map context and field exports.
+- France atlas provides online IGN basemaps and LiDAR HD layers where coverage is available, place geocoding, and taxonomy-based searches of existing OpenStreetMap contributor objects.
+- France search results are source-attributed and remain unverified observations; OpenStreetMap data is contributory and must be checked against authoritative records and field evidence.
+- French AI archaeological detection is not available and remains disabled. IGN POI autocomplete remains disabled pending live capability validation.
+- Country profiles document each atlas extent and declared language; the UK profile does not imply that the active model survey covers the whole United Kingdom.
