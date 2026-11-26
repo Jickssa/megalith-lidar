@@ -68,12 +68,12 @@ jobs:
           REMOTE_TAGS="$(git ls-remote --tags origin "refs/tags/${RELEASE_TAG}" "refs/tags/${RELEASE_TAG}^{}" 2>&1)"
           TAG_STATUS=$?
           set -e
-          if [[ "$TAG_STATUS" -eq 0 && -n "$REMOTE_TAGS" ]]; then
-            echo "Refusing existing tag: $RELEASE_TAG"
+          if [[ "$TAG_STATUS" -ne 0 ]]; then
+            echo "Could not establish tag availability (git ls-remote exit $TAG_STATUS)"
             exit 1
           fi
-          if [[ "$TAG_STATUS" -ne 2 ]]; then
-            echo "Could not establish tag availability (git ls-remote exit $TAG_STATUS)"
+          if [[ -n "$REMOTE_TAGS" ]]; then
+            echo "Refusing existing tag: $RELEASE_TAG"
             exit 1
           fi
           VERSION_CODE="$(sed -nE 's/^[[:space:]]*versionCode[[:space:]]*=[[:space:]]*([0-9]+).*$/\1/p' android/app/build.gradle.kts | head -n1)"
@@ -289,8 +289,8 @@ jobs:
           REMOTE_TAGS="$(git ls-remote --tags origin "refs/tags/${RELEASE_TAG}" "refs/tags/${RELEASE_TAG}^{}" 2>&1)"
           TAG_STATUS=$?
           set -e
-          if [[ "$TAG_STATUS" -eq 0 && -n "$REMOTE_TAGS" ]]; then echo "Release tag already exists; refusing to replace it"; exit 1; fi
-          if [[ "$TAG_STATUS" -ne 2 ]]; then echo "Could not establish tag availability (git ls-remote exit $TAG_STATUS)"; exit 1; fi
+          if [[ "$TAG_STATUS" -ne 0 ]]; then echo "Could not establish tag availability (git ls-remote exit $TAG_STATUS)"; exit 1; fi
+          if [[ -n "$REMOTE_TAGS" ]]; then echo "Release tag already exists; refusing to replace it"; exit 1; fi
           echo "Publication gates accepted for source $SOURCE_SHA and tag $RELEASE_TAG"
 
       - name: Set up JDK 17
