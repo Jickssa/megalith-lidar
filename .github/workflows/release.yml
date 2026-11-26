@@ -363,13 +363,16 @@ jobs:
           test -s "$APK" && test -s "$NOTES"
           REMOTE_BRANCH_SHA="$(git ls-remote origin "refs/heads/${SOURCE_REF}" | cut -f1)"
           [[ "$REMOTE_BRANCH_SHA" == "$SOURCE_SHA" ]] || { echo "Source branch moved before publication"; exit 1; }
+          # Create the tag on the exact source commit before publishing; never force-update an existing tag.
+          git tag -a "$RELEASE_TAG" "$SOURCE_SHA" -m "Megalith LiDAR ${RELEASE_TAG}"
+          git push origin "refs/tags/${RELEASE_TAG}"
+          REMOTE_TAG_SHA="$(git ls-remote origin "refs/tags/${RELEASE_TAG}" | cut -f1)"
+          [[ "$REMOTE_TAG_SHA" == "$(git rev-parse "refs/tags/${RELEASE_TAG}")" ]] || { echo "Remote tag object differs from the created tag"; exit 1; }
+          TAG_COMMIT_SHA="$(git rev-parse "${RELEASE_TAG}^{commit}")"
+          [[ "$TAG_COMMIT_SHA" == "$SOURCE_SHA" ]] || { echo "Tag does not point to the validated source commit"; exit 1; }
           gh release create "$RELEASE_TAG" "$APK" "$APK.sha256" "release/SHA256SUMS" \
             --title "Megalith LiDAR ${RELEASE_TAG}" \
-            --notes-file "$NOTES" \
-            --target "$SOURCE_SHA"
-          git fetch --no-tags origin "refs/tags/${RELEASE_TAG}:refs/tags/${RELEASE_TAG}"
-          RELEASE_TAG_SHA="$(git rev-parse "refs/tags/${RELEASE_TAG}^{commit}")"
-          [[ "$RELEASE_TAG_SHA" == "$SOURCE_SHA" ]] || { echo "Published tag does not match the APK source commit"; exit 1; }
+            --notes-file "$NOTES"
           echo "Public release: https://github.com/${GITHUB_REPOSITORY}/releases/tag/${RELEASE_TAG}" >> "$GITHUB_STEP_SUMMARY"
           echo "Source SHA: ${SOURCE_SHA}" >> "$GITHUB_STEP_SUMMARY"
           echo "Android version: 3.3.0 (321)" >> "$GITHUB_STEP_SUMMARY"
