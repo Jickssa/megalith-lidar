@@ -138,8 +138,22 @@ jobs:
               "assets/web/docs/community_annotations.json",
               "assets/web/docs/roman_summary.json",
               "assets/web/docs/enclosure_summary.json",
+              "assets/web/docs/josm_os1888_antiquities.osm",
+              "assets/web/docs/maproulette_os1888_antiquities.geojson",
+              "assets/web/docs/megalith-lidar.osf",
+              "assets/web/docs/megalith_lidar_osmand.gpx",
+              "assets/web/docs/osmand_qr.svg",
+              "assets/web/docs/uk_roman_roads.addon.render.xml",
+              "assets/web/leaflet/images/layers.png",
+              "assets/web/leaflet/images/layers-2x.png",
               "assets/web/leaflet/images/marker-icon.png",
+              "assets/web/leaflet/images/marker-icon-2x.png",
               "assets/web/leaflet/images/marker-shadow.png",
+              "assets/web/france/web/vendor/images/layers.png",
+              "assets/web/france/web/vendor/images/layers-2x.png",
+              "assets/web/france/web/vendor/images/marker-icon.png",
+              "assets/web/france/web/vendor/images/marker-icon-2x.png",
+              "assets/web/france/web/vendor/images/marker-shadow.png",
           )
           with ZipFile(sys.argv[1]) as apk:
               bad = apk.testzip()
@@ -156,6 +170,7 @@ jobs:
               if b"/assets/web/index.html" not in data: raise SystemExit("UK atlas route missing from DEX")
           print("Release APK ZIP, routes and territory assets verified")
           PY
+          "${ANDROID_HOME}/build-tools/35.0.0/zipalign" -c -v 4 "$APK"
 
       - name: Upload unsigned release candidate (non-publishing)
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
