@@ -14,8 +14,8 @@ android {
         applicationId = "uk.megalith.lidar"
         minSdk = 26
         targetSdk = 35
-        versionCode = 320
-        versionName = "3.2.0"
+        versionCode = 321
+        versionName = "3.3.0"
     }
 
     // Omit AGP's Play-specific DependencyInfoBlock so F-Droid scanner and

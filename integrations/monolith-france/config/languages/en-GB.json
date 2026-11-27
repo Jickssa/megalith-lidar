@@ -1,0 +1,19 @@
+{
+  "locale": "en-GB",
+  "nativeName": "English",
+  "englishName": "English",
+  "messages": {
+    "appName": "Monolith",
+    "selectCountry": "Country / territory",
+    "selectLanguage": "Interface language",
+    "open": "Open application",
+    "community": "Contribute a country",
+    "available": "Supported profile",
+    "countryLanguageNote": "Only languages actually available for this profile are listed.",
+    "remember": "Remember my choice",
+    "loading": "Loading country profiles…",
+    "unsupported": "This country/language combination is not available.",
+    "contributeTitle": "Contribute to Monolith",
+    "contributeBody": "Help adapt Monolith to another territory with a documented profile, verified sources and a local taxonomy."
+  }
+}

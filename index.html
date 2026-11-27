@@ -866,6 +866,13 @@
       border-top: 1px solid var(--border);
       text-align: center;
     }
+    .candidate-cluster-icon { background:transparent; border:0; }
+    .candidate-cluster-icon > span { display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;border:2px solid rgba(255,255,255,.92);background:var(--cluster-color,#b45309);color:#fff;font:700 11px/1 system-ui,sans-serif;box-shadow:0 1px 5px rgba(0,0,0,.42);text-shadow:0 1px 2px rgba(0,0,0,.45); }
+    .candidate-cluster-icon.domain-roman { --cluster-color:#7c3aed; }
+    .candidate-cluster-icon.domain-enclosure { --cluster-color:#0284c7; }
+    .candidate-cluster-icon.domain-prehistoric { --cluster-color:#b45309; }
+    .candidate-cluster-icon.domain-known { --cluster-color:#15803d; }
+    .candidate-cluster-icon.is-selected > span { outline:3px dashed #0f766e;outline-offset:2px; }
   </style>
 </head>
 <body>
@@ -1306,7 +1313,7 @@
         }
       });
     }
-    map.on("zoomend", updateZoomDependentPaneOpacity);
+    map.on("moveend",()=>{updateZoomDependentPaneOpacity();if(currentTab!=="stats")renderActiveView(false);});
 
     let ancientRoadsGeoJSON = null;
     async function ensureAncientRoadsLoaded() {
@@ -1799,6 +1806,23 @@
       }
     });
 
+    function groupCandidateFeaturesByScreenCell(features, projectPoint, cellSize, selectedKey, keyForFeature, isKnownFn) {
+      const groups=new Map(), size=Math.max(12,Number(cellSize)||48);
+      (features||[]).forEach((feature)=>{
+        const p=feature&&feature.properties;
+        if(!p||!Number.isFinite(Number(p.lat))||!Number.isFinite(Number(p.lon)))return;
+        const point=projectPoint([Number(p.lat),Number(p.lon)]);
+        if(!point||!Number.isFinite(point.x)||!Number.isFinite(point.y))return;
+        const gx=Math.floor(point.x/size),gy=Math.floor(point.y/size),key=gx+":"+gy;
+        let group=groups.get(key);
+        if(!group){group={key,x:0,y:0,lat:0,lon:0,count:0,domains:{prehistoric:0,roman:0,enclosure:0},knownCount:0,selected:false,features:[]};groups.set(key,group);}
+        group.x+=point.x;group.y+=point.y;group.lat+=Number(p.lat);group.lon+=Number(p.lon);group.count++;group.features.push(feature);
+        const domain=p.target_domain==="roman"||String(p.predicted_class||"").startsWith("roman_")?"roman":(p.target_domain==="enclosure"||["hut_circle_pound_settlement","iron_age_hillfort_banjo_enclosure","cross_ridge_dyke_field_system"].includes(p.predicted_class)?"enclosure":"prehistoric");
+        group.domains[domain]++;if(isKnownFn&&isKnownFn(p))group.knownCount++;
+        if(selectedKey&&keyForFeature&&keyForFeature(p)===selectedKey)group.selected=true;
+      });
+      return Array.from(groups.values()).map((g)=>({...g,x:g.x/g.count,y:g.y/g.count,lat:g.lat/g.count,lon:g.lon/g.count}));
+    }
     function getCandidateDomain(p) {
       if (!p) return "prehistoric";
       if (p.target_domain === "roman") return "roman";
@@ -3819,43 +3843,31 @@
         return (a.properties.confidence || 0) - (b.properties.confidence || 0);
       });
       renderDensityContourLayer(Array.from(contourFeaturesByKey.values()), filtered);
-      mapOrdered.forEach((f) => {
-        const p = f.properties;
-        const st = scoreScaledStyle(p.confidence, sMin, sMax, p);
-        const sMeta = SURVEY_STATUS_META[p.user_survey_status];
-        const baseRad = sMeta ? st.radius + 1.5 : st.radius;
-        const baseStrokeOp = sMeta ? 0.96 : st.strokeOpacity;
-        const marker = new ShapeMarker([p.lat, p.lon], {
-          pane: "candidatesPane",
-          shape: st.shape,
-          radius: baseRad,
-          color: sMeta ? sMeta.stroke : st.strokeColor,
-          opacity: baseStrokeOp,
-          weight: sMeta ? 2.4 : st.weight,
-          fillColor: st.fillColor,
-          fillOpacity: 0.0
+      const markerZoom=map.getZoom();
+      if(markerZoom<11){
+        const grouped=groupCandidateFeaturesByScreenCell(mapOrdered,(latlng)=>map.latLngToContainerPoint(latlng),48,selectedFeatureKey,featureKey,(p)=>matchesTab(p,"known"));
+        grouped.forEach((cell)=>{
+          const dominant=cell.knownCount>0&&cell.knownCount>=cell.count*.5?"known":Object.entries(cell.domains).sort((a,b)=>b[1]-a[1])[0][0];
+          const icon=L.divIcon({className:"candidate-cluster-icon domain-"+dominant+(cell.selected?" is-selected":""),html:"<span>"+cell.count+"</span>",iconSize:[34,34],iconAnchor:[17,17]});
+          const marker=L.marker([cell.lat,cell.lon],{icon,keyboard:true,title:cell.count+" candidats regroupés — cliquer pour zoomer"});
+          const breakdown=Object.entries(cell.domains).filter((e)=>e[1]>0).map((e)=>e[1]+" "+(e[0]==="roman"?"romain(s)":e[0]==="enclosure"?"enclos":"préhistorique(s)")).join(" · ");
+          marker.bindTooltip("<strong>"+cell.count+" candidats</strong><br/>"+breakdown+(cell.knownCount?" · "+cell.knownCount+" redécouverts":"")+(cell.selected?" · contient le site sélectionné":"")+"<br/><em>Cliquer pour affiner la zone</em>");
+          marker.on("click",()=>{if(cell.features.length===1){selectCandidate(cell.features[0].properties,"pan_or_zoom",true);return;}map.setView([cell.lat,cell.lon],Math.min(11,markerZoom+2));});
+          marker.addTo(markersLayer);
         });
-        marker._candKey = featureKey(p);
-        marker._baseRadius = baseRad;
-        marker._baseStrokeOpacity = baseStrokeOp;
-        const surveyTip = p.user_survey_status
-          ? `<br/><strong>${(sMeta && sMeta.fullLabel) || p.user_survey_status}</strong>${p.user_survey_comment ? `: ${p.user_survey_comment}` : ""}`
-          : "";
-        const knownTip = (p.matched_monument && p.matched_monument.name)
-          ? `<br/><span style="color:var(--green);font-weight:600;">★ ${p.matched_monument.name} (NHLE #${p.matched_monument.list_entry})</span>`
-          : "";
-        const mpTip = (p.megalithic_portal_matches && p.megalithic_portal_matches.length > 0)
-          ? `<br/><span style="color:var(--cyan);font-weight:600;">◈ Megalithic.co.uk: ${p.megalithic_portal_matches[0].name} (${p.megalithic_portal_matches[0].site_type}, ${p.megalithic_portal_matches[0].distance_m} m)</span>`
-          : "";
-        marker.bindTooltip(
-          `<strong>${st.glyph} ${p.os_grid_ref}</strong> · <span class="muted">${st.catLabel}</span><br/>${formatClass(p.predicted_class)} · Score: <strong>${p.confidence.toFixed(3)}</strong> · Relief: ${p.est_local_relief_m > 0 ? "+" : ""}${p.est_local_relief_m} m${knownTip}${mpTip}${surveyTip}<br/><em>Click to inspect site &amp; 256 m LiDAR / Cropmarks</em>`
-        );
-        marker.on("click", (ev) => {
-          L.DomEvent.stopPropagation(ev);
-          selectCandidate(p, "pan_or_zoom", true);
+      }else{
+        mapOrdered.forEach((f)=>{
+          const p=f.properties,st=scoreScaledStyle(p.confidence,sMin,sMax,p),sMeta=SURVEY_STATUS_META[p.user_survey_status];
+          const baseRad=sMeta?st.radius+1.5:st.radius,baseStrokeOp=sMeta?0.96:st.strokeOpacity;
+          const marker=new ShapeMarker([p.lat,p.lon],{pane:"candidatesPane",shape:st.shape,radius:baseRad,color:sMeta?sMeta.stroke:st.strokeColor,opacity:baseStrokeOp,weight:sMeta?2.4:st.weight,fillColor:st.fillColor,fillOpacity:0.0});
+          marker._candKey=featureKey(p);marker._baseRadius=baseRad;marker._baseStrokeOpacity=baseStrokeOp;
+          const surveyTip=p.user_survey_status?`<br/><strong>${(sMeta&&sMeta.fullLabel)||p.user_survey_status}</strong>${p.user_survey_comment?`: ${p.user_survey_comment}`:""}`:"";
+          const knownTip=p.matched_monument&&p.matched_monument.name?`<br/><span style="color:var(--green);font-weight:600;">★ ${p.matched_monument.name} (NHLE #${p.matched_monument.list_entry})</span>`:"";
+          const mpTip=p.megalithic_portal_matches&&p.megalithic_portal_matches.length>0?`<br/><span style="color:var(--cyan);font-weight:600;">◈ Megalithic.co.uk: ${p.megalithic_portal_matches[0].name} (${p.megalithic_portal_matches[0].site_type}, ${p.megalithic_portal_matches[0].distance_m} m)</span>`:"";
+          marker.bindTooltip(`<strong>${st.glyph} ${p.os_grid_ref}</strong> · <span class="muted">${st.catLabel}</span><br/>${formatClass(p.predicted_class)} · Score: <strong>${p.confidence.toFixed(3)}</strong> · Relief: ${p.est_local_relief_m>0?"+":""}${p.est_local_relief_m} m${knownTip}${mpTip}${surveyTip}<br/><em>Click to inspect site &amp; 256 m LiDAR / Cropmarks</em>`);
+          marker.on("click",(ev)=>{L.DomEvent.stopPropagation(ev);selectCandidate(p,"pan_or_zoom",true);});marker.addTo(markersLayer);
         });
-        marker.addTo(markersLayer);
-      });
+      }
       updateZoomDependentPaneOpacity();
 
       renderCandidateTableRows();
@@ -3913,23 +3925,15 @@
         }
       });
 
-      const qp = summaryData.queue_progress || {};
-      const englandPct = ((qp.total_scanned_area_km2 || 0) / 130279.0 * 100).toFixed(2);
-      const badgeEl = document.getElementById("surveyProgressBadge");
-      if (badgeEl) {
-        badgeEl.textContent = `${qp.completed_squares} squares (${qp.total_scanned_area_km2} km², ${englandPct}% of England)`;
-        badgeEl.title = `Updated ${summaryData.updated_at_utc} (${qp.pending_squares} squares remaining in queue)`;
-      }
-      const covEl = document.getElementById("mapCoverageSummary");
-      if (covEl) {
-        covEl.textContent = `${qp.completed_squares} sq (${englandPct}%)`;
-        covEl.title = `${qp.completed_squares} 2 km × 2 km squares = ${qp.total_scanned_area_km2} km² (${englandPct}% of England's 130,279 km²; ${qp.pending_squares} test squares remaining in queue)`;
-      }
-      const guideAreaEl = document.getElementById("guideAreaSpan");
-      if (guideAreaEl) {
-        guideAreaEl.textContent = `${qp.total_scanned_area_km2} km² across ${qp.completed_squares} squares`;
-      }
-
+      const qp=summaryData.queue_progress||{};
+      const area=Number(qp.total_scanned_area_km2),areaLabel=Number.isFinite(area)?area.toLocaleString("en-GB",{maximumFractionDigits:3})+" km² scanned":"scanned area unavailable";
+      const completed=Number(qp.completed_squares||0),pending=Number(qp.pending_squares||0);
+      const badge=document.getElementById("surveyProgressBadge");
+      if(badge){badge.textContent=completed.toLocaleString("en-GB")+" squares · "+areaLabel+" · England campaign";badge.title="Campaign extent: England only. "+pending.toLocaleString("en-GB")+" test squares pending. No percentage of national land area is inferred."; }
+      const cov=document.getElementById("mapCoverageSummary");
+      if(cov){cov.textContent=completed.toLocaleString("en-GB")+" sq · "+areaLabel;cov.title="England-only campaign. Surface is taken directly from the campaign summary; it is not a percentage of national land area. "+pending.toLocaleString("en-GB")+" test squares pending."; }
+      const guideAreaEl=document.getElementById("guideAreaSpan");
+      if(guideAreaEl){guideAreaEl.textContent=areaLabel+" across "+completed.toLocaleString("en-GB")+" squares";}
       const tm = summaryData.heldout_test_evaluation || {};
       const base = summaryData.scalar_baseline_test || {};
       const sub = summaryData.subgroup_and_confounding_analysis || {};

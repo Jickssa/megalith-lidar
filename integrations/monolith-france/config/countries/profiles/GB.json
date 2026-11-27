@@ -1,0 +1,77 @@
+{
+  "schemaVersion": "1.0",
+  "countryCode": "GB",
+  "name": {
+    "fr-FR": "Royaume-Uni",
+    "en-GB": "United Kingdom"
+  },
+  "status": "active",
+  "defaultLocale": "en-GB",
+  "supportedLocales": [
+    "en-GB"
+  ],
+  "coordinateReferenceSystem": "EPSG:27700 for national model data; WGS84 for Web map exchange",
+  "map": {
+    "center": [
+      54.5,
+      -2.5
+    ],
+    "zoom": 6,
+    "minZoom": 4,
+    "maxZoom": 19,
+    "bounds": [
+      -8.7,
+      49.8,
+      2.2,
+      60.9
+    ]
+  },
+  "atlasEntry": "/assets/web/index.html",
+  "sources": [
+    {
+      "id": "environment-agency-lidar",
+      "provider": "Environment Agency",
+      "type": "LiDAR terrain datasets",
+      "license": "OGL v3.0",
+      "coverage": "According to source datasets"
+    },
+    {
+      "id": "historic-england-nhle",
+      "provider": "Historic England",
+      "type": "National Heritage List for England",
+      "license": "OGL v3.0",
+      "coverage": "England"
+    },
+    {
+      "id": "ordnance-survey-historic",
+      "provider": "National Library of Scotland / Ordnance Survey",
+      "type": "Historic mapping",
+      "coverage": "Datasets embedded/linked by original app"
+    },
+    {
+      "id": "openstreetmap",
+      "provider": "OpenStreetMap contributors",
+      "type": "OSM context",
+      "license": "ODbL",
+      "coverage": "Contributory"
+    }
+  ],
+  "capabilities": {
+    "originalCandidateSystem": true,
+    "originalInspectors": true,
+    "originalFieldExports": true,
+    "aiModels": "UK model; current published campaign extent: England. Not portable to France.",
+    "activeSurveyExtent": "England",
+    "activeSurveyExtentNote": "This profile represents the United Kingdom; the currently published model and candidate survey queue cover England only and must not be interpreted as complete UK coverage."
+  },
+  "licences": [
+    {
+      "name": "GNU AGPL v3.0",
+      "url": "https://www.gnu.org/licenses/agpl-3.0.html"
+    },
+    {
+      "name": "OpenStreetMap ODbL",
+      "url": "https://www.openstreetmap.org/copyright"
+    }
+  ]
+}

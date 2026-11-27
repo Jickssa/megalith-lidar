@@ -1,0 +1,19 @@
+{
+  "locale": "fr-FR",
+  "nativeName": "Français",
+  "englishName": "French",
+  "messages": {
+    "appName": "Monolith",
+    "selectCountry": "Pays / territoire",
+    "selectLanguage": "Langue de l’interface",
+    "open": "Ouvrir l’application",
+    "community": "Contribuer à un nouveau pays",
+    "available": "Profil opérationnel",
+    "countryLanguageNote": "Seules les langues réellement disponibles pour ce profil sont proposées.",
+    "remember": "Mémoriser mon choix",
+    "loading": "Chargement des profils…",
+    "unsupported": "Cette combinaison pays/langue n’est pas disponible.",
+    "contributeTitle": "Contribuer à Monolith",
+    "contributeBody": "Aidez à adapter Monolith à un nouveau territoire avec un profil documenté, des sources vérifiées et une taxonomie locale."
+  }
+}

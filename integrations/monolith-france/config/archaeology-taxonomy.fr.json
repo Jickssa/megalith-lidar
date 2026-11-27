@@ -1,0 +1,196 @@
+{
+  "schemaVersion": "1.4",
+  "categories": [
+    {
+      "id": "megaliths",
+      "label": "Mégalithes et sépultures préhistoriques",
+      "periods": [
+        "Neolithique",
+        "Âge du Bronze"
+      ],
+      "terms": [
+        "dolmen",
+        "menhir",
+        "allée couverte",
+        "cairn",
+        "cromlech",
+        "stone circle",
+        "tumulus"
+      ],
+      "osm": [
+        {
+          "tags": {
+            "historic": "archaeological_site",
+            "archaeological_site": "megalith"
+          }
+        }
+      ],
+      "queryFields": [
+        "name",
+        "name:fr",
+        "ref",
+        "megalith_type"
+      ]
+    },
+    {
+      "id": "tumulus",
+      "label": "Tumulus, tertres et cairns",
+      "periods": [
+        "Préhistoire",
+        "Protohistoire"
+      ],
+      "terms": [
+        "tumulus",
+        "tertre",
+        "cairn",
+        "barrow"
+      ],
+      "osm": [
+        {
+          "tags": {
+            "historic": "archaeological_site",
+            "archaeological_site": "megalith",
+            "megalith_type": "round_barrow"
+          }
+        }
+      ],
+      "queryFields": [
+        "name",
+        "name:fr",
+        "ref",
+        "megalith_type"
+      ]
+    },
+    {
+      "id": "enclosures",
+      "label": "Enceintes, oppida et fortifications anciennes",
+      "periods": [
+        "Protohistoire",
+        "Antiquité"
+      ],
+      "terms": [
+        "oppidum",
+        "enceinte",
+        "hillfort",
+        "fortification",
+        "camp"
+      ],
+      "osm": [
+        {
+          "tags": {
+            "historic": "archaeological_site",
+            "archaeological_site": "fortification"
+          }
+        }
+      ],
+      "queryFields": [
+        "name",
+        "name:fr",
+        "ref",
+        "fortification_type"
+      ]
+    },
+    {
+      "id": "roman",
+      "label": "Sites gallo-romains et romains",
+      "periods": [
+        "Antiquité"
+      ],
+      "terms": [
+        "villa gallo-romaine",
+        "temple",
+        "fanum",
+        "thermes",
+        "camp romain",
+        "établissement romain"
+      ],
+      "osm": [
+        {
+          "tags": {
+            "historic": "archaeological_site",
+            "archaeological_site": "roman_villa"
+          }
+        },
+        {
+          "tags": {
+            "historic": "archaeological_site",
+            "archaeological_site": "settlement",
+            "historic:civilization": "ancient_roman"
+          }
+        }
+      ],
+      "queryFields": [
+        "name",
+        "name:fr",
+        "ref",
+        "historic:civilization"
+      ]
+    },
+    {
+      "id": "ancient-roads",
+      "label": "Voies anciennes et ouvrages",
+      "periods": [
+        "Antiquité",
+        "Moyen Âge"
+      ],
+      "terms": [
+        "voie romaine",
+        "chaussée",
+        "pont ancien",
+        "aqueduc"
+      ],
+      "osm": [
+        {
+          "tags": {
+            "historic": "roman_road"
+          }
+        },
+        {
+          "tags": {
+            "historic": "milestone"
+          }
+        }
+      ],
+      "queryFields": [
+        "name",
+        "name:fr",
+        "ref"
+      ]
+    },
+    {
+      "id": "medieval",
+      "label": "Patrimoine médiéval fortifié",
+      "periods": [
+        "Moyen Âge"
+      ],
+      "terms": [
+        "château",
+        "motte castrale",
+        "enceinte médiévale"
+      ],
+      "osm": [
+        {
+          "tags": {
+            "historic": "castle"
+          }
+        },
+        {
+          "tags": {
+            "historic": "city_gate"
+          }
+        },
+        {
+          "tags": {
+            "historic": "fort"
+          }
+        }
+      ],
+      "queryFields": [
+        "name",
+        "name:fr",
+        "ref"
+      ]
+    }
+  ],
+  "interpretation": "Les familles archéologiques utilisent en priorité des combinaisons OSM documentées. Les valeurs `historic=castle`, `historic=fort` et `historic=city_gate` décrivent des objets historiques visibles, pas nécessairement des vestiges archéologiques enfouis. Les résultats restent des données contributives et doivent être recoupés. Les cairns `man_made=cairn` ne sont pas inclus automatiquement, car cette valeur peut désigner des monticules de pierres de repérage ou des cairns non archéologiques."
+}

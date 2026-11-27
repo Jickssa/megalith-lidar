@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0",
+  "module": "monolith-france",
+  "version": "2.0.0",
+  "branch": "feature/monolith-international-next",
+  "note": "The France atlas has three UI steps (Map & LiDAR, Candidates List, Site Details), synchronized result/map/inspector selection, searchable candidate records and integrated field notebook. French data, sources and scientific capabilities remain independent of UK. Live IGN POI validation, live network validation and physical Android testing remain pending."
+}

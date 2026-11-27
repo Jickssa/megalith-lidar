@@ -29,6 +29,7 @@ import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
 
@@ -39,26 +40,69 @@ class MainActivity : Activity() {
     private var pendingGeoOrigin: String? = null
     private var pendingGeoCallback: GeolocationPermissions.Callback? = null
     private var fileUploadCallback: ValueCallback<Array<Uri>>? = null
+    @Volatile private var activityDestroyed = false
+    private val diagnosticCacheLock = Any()
 
+    private fun showToastIfActive(message: String, duration: Int = Toast.LENGTH_SHORT) {
+        if (activityDestroyed) return
+        runOnUiThread {
+            if (!activityDestroyed) {
+                Toast.makeText(this@MainActivity, message, duration).show()
+            }
+        }
+    }
     inner class AndroidBridge {
         @JavascriptInterface
         fun saveOrShareFile(filename: String, mimeType: String, content: String) {
-            runOnUiThread {
-                try {
-                    val safeName = filename.replace(Regex("[^A-Za-z0-9._-]"), "_")
-                        .ifEmpty { "megalith_export.txt" }
-                    val exportsDir = File(cacheDir, "exports").apply { mkdirs() }
-                    val outFile = File(exportsDir, safeName)
-                    outFile.writeText(content, Charsets.UTF_8)
-                    shareExportedFile(outFile, mimeType)
-                } catch (e: Exception) {
-                    Toast.makeText(
-                        this@MainActivity,
-                        "Export failed: ${e.message}",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
+            if (activityDestroyed) return
+            if (content.length > MAX_EXPORT_BYTES) {
+                showToastIfActive("Export refused: file exceeds 25 MiB.", Toast.LENGTH_LONG)
+                return
             }
+            val bytes = content.toByteArray(Charsets.UTF_8)
+            if (bytes.size > MAX_EXPORT_BYTES) {
+                showToastIfActive("Export refused: file exceeds 25 MiB.", Toast.LENGTH_LONG)
+                return
+            }
+            val safeMime = when (mimeType.lowercase()) {
+                "application/geo+json", "application/json", "text/plain",
+                "application/gpx+xml", "application/xml" -> mimeType.lowercase()
+                else -> "application/octet-stream"
+            }
+            val safeName = filename.replace(Regex("[^A-Za-z0-9._-]"), "_")
+                .trim('.', '_')
+                .ifEmpty { "megalith_export.txt" }
+                .take(120)
+            val suffix = safeName.substringAfterLast('.', "")
+                .takeIf { it.matches(Regex("[A-Za-z0-9]{1,10}")) }
+                ?.let { ".$it" } ?: ".txt"
+
+            // File I/O stays off the UI thread. A completed export is discarded if
+            // the Activity is destroyed before its UI hand-off can run.
+            Thread {
+                var temporaryFile: File? = null
+                try {
+                    val exportsDir = File(cacheDir, "exports").apply { mkdirs() }
+                    val outFile = File.createTempFile("monolith-", suffix, exportsDir)
+                    temporaryFile = outFile
+                    outFile.writeBytes(bytes)
+                    runOnUiThread {
+                        if (activityDestroyed) {
+                            outFile.delete()
+                            return@runOnUiThread
+                        }
+                        try {
+                            shareExportedFile(outFile, safeMime)
+                        } catch (e: Exception) {
+                            outFile.delete()
+                            showToastIfActive("Export failed: ${e.message}")
+                        }
+                    }
+                } catch (e: Exception) {
+                    temporaryFile?.delete()
+                    showToastIfActive("Export failed: ${e.message}")
+                }
+            }.start()
         }
     }
 
@@ -140,7 +184,12 @@ class MainActivity : Activity() {
                     openExternalUri(uri)
                     return true
                 }
-                if (uri.host == APP_HOST) {
+                if (
+                    scheme == "https" &&
+                    uri.host == APP_HOST &&
+                    uri.userInfo == null &&
+                    (uri.port == -1 || uri.port == 443)
+                ) {
                     val path = uri.path ?: ""
                     if (isDownloadableAssetPath(path)) {
                         shareBundledAsset(path.removePrefix("/assets/"))
@@ -152,7 +201,8 @@ class MainActivity : Activity() {
                     openExternalUri(uri)
                     return true
                 }
-                return false
+                // Block intent:, file:, content: and unknown custom schemes.
+                return true
             }
         }
 
@@ -183,13 +233,25 @@ class MainActivity : Activity() {
             ): Boolean {
                 fileUploadCallback?.onReceiveValue(null)
                 fileUploadCallback = filePathCallback
+                val requestedTypes = fileChooserParams.acceptTypes
+                    .flatMap { it.split(",") }
+                    .map { it.trim().lowercase() }
+                    .flatMap { type ->
+                        when (type) {
+                            ".json" -> listOf("application/json")
+                            ".geojson" -> listOf("application/geo+json", "application/json")
+                            "application/json", "application/geo+json", "text/json" -> listOf(type)
+                            else -> emptyList()
+                        }
+                    }
+                    .distinct()
+                    .ifEmpty { listOf("application/json", "application/geo+json", "text/plain") }
                 val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
                     addCategory(Intent.CATEGORY_OPENABLE)
-                    type = "*/*"
-                    putExtra(
-                        Intent.EXTRA_MIME_TYPES,
-                        arrayOf("application/json", "application/geo+json", "text/plain")
-                    )
+                    type = if (requestedTypes.size == 1) requestedTypes.first() else "*/*"
+                    if (requestedTypes.size > 1) {
+                        putExtra(Intent.EXTRA_MIME_TYPES, requestedTypes.toTypedArray())
+                    }
                 }
                 return try {
                     startActivityForResult(
@@ -198,6 +260,7 @@ class MainActivity : Activity() {
                     )
                     true
                 } catch (_: ActivityNotFoundException) {
+                    fileUploadCallback?.onReceiveValue(null)
                     fileUploadCallback = null
                     false
                 }
@@ -270,47 +333,149 @@ class MainActivity : Activity() {
 
     private fun serveDiagnosticPng(rawName: String): WebResourceResponse {
         val safeName = rawName.replace(Regex("[^A-Za-z0-9._-]"), "")
-        if (safeName.isEmpty() || !safeName.endsWith(".png")) {
+        if (safeName.isEmpty() || safeName != rawName || !safeName.endsWith(".png", ignoreCase = true)) {
             return emptyResponse(404, "Not Found")
         }
-        val diagDir = File(cacheDir, "diagnostics").apply { mkdirs() }
-        val cachedFile = File(diagDir, safeName)
-        if (!cachedFile.exists() || cachedFile.length() == 0L) {
-            val remoteUrl = "$REMOTE_DIAG_BASE$safeName"
-            try {
-                val conn = (URL(remoteUrl).openConnection() as HttpURLConnection).apply {
-                    connectTimeout = 8000
-                    readTimeout = 12000
-                    requestMethod = "GET"
-                }
-                if (conn.responseCode == 200) {
-                    val tmpFile = File(diagDir, "$safeName.tmp")
-                    conn.inputStream.use { input ->
-                        FileOutputStream(tmpFile).use { output ->
-                            input.copyTo(output)
-                        }
-                    }
-                    tmpFile.renameTo(cachedFile)
-                }
-                conn.disconnect()
-            } catch (_: Exception) {
-                // Offline or network unreachable; fall through to 404 if not cached
+
+        return synchronized(diagnosticCacheLock) {
+            val diagDir = File(cacheDir, "diagnostics").apply { mkdirs() }
+            val cachedFile = File(diagDir, safeName)
+            if (!isValidDiagnosticPng(cachedFile)) {
+                cachedFile.delete()
+                downloadDiagnosticPng(diagDir, cachedFile, safeName)
+            } else {
+                cachedFile.setLastModified(System.currentTimeMillis())
             }
-        }
-        if (cachedFile.exists() && cachedFile.length() > 0L) {
-            return WebResourceResponse(
+
+            if (!isValidDiagnosticPng(cachedFile)) {
+                return@synchronized emptyResponse(404, "Not Found")
+            }
+
+            trimDiagnosticCache(diagDir, cachedFile)
+            WebResourceResponse(
                 "image/png",
                 null,
                 200,
                 "OK",
                 mapOf(
                     "Access-Control-Allow-Origin" to "*",
-                    "Cache-Control" to "public, max-age=31536000"
+                    "Cache-Control" to "public, max-age=86400"
                 ),
                 FileInputStream(cachedFile)
             )
         }
-        return emptyResponse(404, "Not Found")
+    }
+
+    private fun isValidDiagnosticPng(file: File): Boolean {
+        if (!file.isFile || file.length() < PNG_SIGNATURE.size ||
+            file.length() > MAX_DIAGNOSTIC_FILE_BYTES
+        ) {
+            return false
+        }
+        return try {
+            FileInputStream(file).use { input ->
+                val signature = ByteArray(PNG_SIGNATURE.size)
+                var offset = 0
+                while (offset < signature.size) {
+                    val count = input.read(signature, offset, signature.size - offset)
+                    if (count < 0) return false
+                    offset += count
+                }
+                signature.contentEquals(PNG_SIGNATURE)
+            }
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    private fun downloadDiagnosticPng(directory: File, target: File, fileName: String): Boolean {
+        val connection = try {
+            (URL("$REMOTE_DIAG_BASE$fileName").openConnection() as HttpURLConnection).apply {
+                connectTimeout = 8000
+                readTimeout = 12000
+                requestMethod = "GET"
+                instanceFollowRedirects = false
+                setRequestProperty("Accept", "image/png")
+            }
+        } catch (_: Exception) {
+            return false
+        }
+
+        var temporaryFile: File? = null
+        try {
+            if (connection.responseCode != 200) return false
+            val contentType = connection.contentType
+                ?.substringBefore(";")
+                ?.trim()
+                ?.lowercase()
+            if (contentType != "image/png") return false
+
+            val declaredLength = connection.getHeaderField("Content-Length")?.toLongOrNull() ?: -1L
+            if (declaredLength > MAX_DIAGNOSTIC_FILE_BYTES ||
+                (declaredLength >= 0L && declaredLength < PNG_SIGNATURE.size)
+            ) {
+                return false
+            }
+
+            val temp = File.createTempFile("monolith-diag-", ".tmp", directory)
+            temporaryFile = temp
+            var totalBytes = 0L
+            connection.inputStream.use { input ->
+                FileOutputStream(temp).use { output ->
+                    val buffer = ByteArray(8192)
+                    while (true) {
+                        val count = input.read(buffer)
+                        if (count < 0) break
+                        totalBytes += count.toLong()
+                        if (totalBytes > MAX_DIAGNOSTIC_FILE_BYTES) {
+                            throw IOException("Diagnostic image exceeds the 8 MiB limit")
+                        }
+                        output.write(buffer, 0, count)
+                    }
+                }
+            }
+
+            if (!isValidDiagnosticPng(temp)) return false
+            if (target.exists() && !target.delete()) return false
+            val renamed = temp.renameTo(target)
+            if (renamed) temporaryFile = null
+            return renamed
+        } catch (_: Exception) {
+            // Offline, malformed response or oversized file: do not cache it.
+            return false
+        } finally {
+            temporaryFile?.delete()
+            connection.disconnect()
+        }
+    }
+
+    private fun trimDiagnosticCache(directory: File, keep: File) {
+        val now = System.currentTimeMillis()
+        val files = directory.listFiles()
+            ?.filter { it.isFile && it.extension.equals("png", ignoreCase = true) }
+            ?: emptyList()
+        val keepPath = try { keep.canonicalPath } catch (_: Exception) { keep.absolutePath }
+        var totalBytes = files.sumOf { it.length() }
+        var fileCount = files.size
+
+        for (file in files.sortedBy { it.lastModified() }) {
+            val path = try { file.canonicalPath } catch (_: Exception) { file.absolutePath }
+            val isCurrent = path == keepPath
+            val expired = !isCurrent && now - file.lastModified() > MAX_DIAGNOSTIC_CACHE_AGE_MS
+            val overLimit = fileCount > MAX_DIAGNOSTIC_CACHE_FILES ||
+                totalBytes > MAX_DIAGNOSTIC_CACHE_BYTES
+            if (expired || (overLimit && !isCurrent)) {
+                val size = file.length()
+                if (file.delete()) {
+                    fileCount--
+                    totalBytes -= size
+                }
+            }
+        }
+
+        directory.listFiles()
+            ?.filter { it.isFile && it.name.endsWith(".tmp", ignoreCase = true) }
+            ?.forEach { it.delete() }
     }
 
     private fun emptyResponse(code: Int, reason: String): WebResourceResponse {
@@ -349,6 +514,11 @@ class MainActivity : Activity() {
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (activityDestroyed) {
+            pendingGeoOrigin = null
+            pendingGeoCallback = null
+            return
+        }
         if (requestCode == REQ_LOCATION_PERMISSION) {
             val granted = grantResults.any { it == PackageManager.PERMISSION_GRANTED }
             val origin = pendingGeoOrigin
@@ -363,6 +533,11 @@ class MainActivity : Activity() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+        if (activityDestroyed) {
+            fileUploadCallback?.let { callback -> runCatching { callback.onReceiveValue(null) } }
+            fileUploadCallback = null
+            return
+        }
         if (requestCode == REQ_FILE_CHOOSER) {
             val cb = fileUploadCallback ?: return
             fileUploadCallback = null
@@ -381,6 +556,10 @@ class MainActivity : Activity() {
 
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
+        if (activityDestroyed || !::webView.isInitialized) {
+            super.onBackPressed()
+            return
+        }
         webView.evaluateJavascript(
             "(function(){var d=document.getElementById('osmandQrDialog');if(d&&d.open){d.close();return true;}return false;})()"
         ) { res ->
@@ -396,13 +575,51 @@ class MainActivity : Activity() {
         }
     }
 
+
+    override fun onDestroy() {
+        activityDestroyed = true
+
+        val geoOrigin = pendingGeoOrigin
+        val geoCallback = pendingGeoCallback
+        pendingGeoOrigin = null
+        pendingGeoCallback = null
+        if (geoOrigin != null && geoCallback != null) {
+            runCatching { geoCallback.invoke(geoOrigin, false, false) }
+        }
+
+        fileUploadCallback?.let { callback -> runCatching { callback.onReceiveValue(null) } }
+        fileUploadCallback = null
+
+        if (::webView.isInitialized) {
+            runCatching { webView.stopLoading() }
+            runCatching { webView.webChromeClient = null }
+            runCatching { webView.setDownloadListener(null) }
+            runCatching { webView.removeJavascriptInterface("MegalithAndroid") }
+            runCatching { (webView.parent as? ViewGroup)?.removeView(webView) }
+            runCatching { webView.removeAllViews() }
+            runCatching { webView.destroy() }
+        }
+        if (::rootLayout.isInitialized) {
+            runCatching { rootLayout.removeAllViews() }
+        }
+        super.onDestroy()
+    }
+
     companion object {
         private const val APP_HOST = "appassets.androidplatform.net"
         private const val START_URL =
-            "https://appassets.androidplatform.net/assets/web/index.html"
+            "https://appassets.androidplatform.net/assets/web/atlas-home.html"
         private const val REMOTE_DIAG_BASE =
             "https://raw.githubusercontent.com/GlassOnTin/megalith-lidar/main/docs/diagnostics/"
         private const val REQ_LOCATION_PERMISSION = 1001
         private const val REQ_FILE_CHOOSER = 1002
+        private const val MAX_EXPORT_BYTES = 25 * 1024 * 1024
+        private const val MAX_DIAGNOSTIC_FILE_BYTES = 8L * 1024 * 1024
+        private const val MAX_DIAGNOSTIC_CACHE_BYTES = 64L * 1024 * 1024
+        private const val MAX_DIAGNOSTIC_CACHE_FILES = 24
+        private const val MAX_DIAGNOSTIC_CACHE_AGE_MS = 30L * 24 * 60 * 60 * 1000
+        private val PNG_SIGNATURE = byteArrayOf(
+            0x89.toByte(), 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A
+        )
     }
 }

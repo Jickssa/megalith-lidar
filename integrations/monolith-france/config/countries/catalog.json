@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "1.0",
+  "defaultCountry": "FR",
+  "countries": [
+    {
+      "code": "FR",
+      "name": {
+        "fr-FR": "France métropolitaine",
+        "en-GB": "Metropolitan France"
+      },
+      "profile": "profiles/FR.json",
+      "status": "active",
+      "supportedLanguages": [
+        "fr-FR"
+      ],
+      "defaultLanguage": "fr-FR"
+    },
+    {
+      "code": "GB",
+      "name": {
+        "fr-FR": "Royaume-Uni",
+        "en-GB": "United Kingdom"
+      },
+      "profile": "profiles/GB.json",
+      "status": "active",
+      "supportedLanguages": [
+        "en-GB"
+      ],
+      "defaultLanguage": "en-GB"
+    }
+  ],
+  "contribution": {
+    "label": {
+      "fr-FR": "Contribuer à un nouveau pays",
+      "en-GB": "Contribute a country"
+    },
+    "page": "/assets/web/community-countries.html"
+  }
+}

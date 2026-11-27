@@ -1,0 +1,100 @@
+'use strict';
+const assert=require('node:assert/strict');
+const {getStorageLimits,isValidObservationFeature,parseObservationImport,isGeoJsonFile,getSearchSettings,buildPlaceSearchUrl,normalizeTaxonomy,escapeOverpassValue,escapeOverpassRegex,buildOverpassTagSelector,queryBoxFromBounds,buildOverpassQuery,osmElementToItem,deduplicateOsmItems,buildPoiAutocompleteUrl,normalizeResultRecord,siteRecordToFeature,tileHealthLabel,buildTileHealthSummary}=require('../web/app.js');
+const point=(lon,lat,properties={title:'test'})=>({type:'Feature',geometry:{type:'Point',coordinates:[lon,lat]},properties});
+
+assert.equal(isValidObservationFeature(point(2.35,48.86)),true,'coordonnées WGS84 valides');
+assert.equal(isValidObservationFeature(point(181,48.86)),false,'longitude hors plage');
+assert.equal(isValidObservationFeature(point(2.35,91)),false,'latitude hors plage');
+assert.equal(isValidObservationFeature(point('2.35',48.86)),false,'coordonnée chaîne refusée');
+assert.equal(isValidObservationFeature({...point(2.35,48.86),geometry:{type:'LineString',coordinates:[[2,48],[3,49]]}}),false,'géométrie non ponctuelle refusée');
+assert.equal(isValidObservationFeature(point(2.35,48.86,[])),false,'propriétés tableau refusées');
+assert.equal(isValidObservationFeature(point(2.35,48.86,null)),true,'properties:null autorisé');
+
+const limits={maxImportBytes:1024,maxFeatures:3};
+const batch={type:'FeatureCollection',features:[point(2.35,48.86),point(3.1,49.2),point(181,48)]};
+const parsed=parseObservationImport(batch,512,2,limits);
+assert.equal(parsed.features.length,1,'respecte le plafond cumulé');
+assert.equal(parsed.invalid,1,'compte les entités invalides');
+assert.equal(parsed.skipped,1,'compte les entités au-delà du plafond');
+assert.throws(()=>parseObservationImport(batch,2048,0,limits),/trop volumineux/);
+assert.throws(()=>parseObservationImport({type:'Feature',geometry:{}},10,0,limits),/FeatureCollection/);
+assert.throws(()=>parseObservationImport({type:'FeatureCollection',features:[1,2,3,4]},10,0,limits),/dépasse/);
+assert.deepEqual(getStorageLimits({storage:{maxImportBytes:1234,maxFeatures:42}}),{maxImportBytes:1234,maxFeatures:42});
+assert.deepEqual(getStorageLimits({storage:{maxImportBytes:-1,maxFeatures:'40'}}),{maxImportBytes:20*1024*1024,maxFeatures:5000});
+assert.equal(isGeoJsonFile({name:'terrain.geojson',type:''}),true,'geojson extension accepted with empty provider MIME');
+assert.equal(isGeoJsonFile({name:'notes.json',type:'application/json'}),true,'JSON MIME accepted');
+assert.equal(isGeoJsonFile({name:'payload.bin',type:'application/geo+json'}),true,'GeoJSON MIME accepted without extension');
+assert.equal(isGeoJsonFile({name:'payload.bin',type:'application/octet-stream'}),false,'generic binary rejected');
+assert.equal(isGeoJsonFile({name:'page.html',type:'text/html'}),false,'HTML rejected');
+assert.equal(isGeoJsonFile({name:'archive.zip',type:'application/zip'}),false,'archive rejected');
+console.log('PASS — GeoJSON validation, WGS84 ranges, MIME/extension filter, size limits and configuration fallbacks.');
+
+const searchSettings=getSearchSettings({search:{maxResults:250,osmMinimumZoom:9,territory:'METROPOLE'}});
+assert.deepEqual(searchSettings,{maxResults:30,osmMinimumZoom:9,territory:'METROPOLE',maxSearchAreaKm2:2500},'plafond de résultats, territoire et emprise maximale');
+const fallbackSearch=getSearchSettings({search:{maxResults:-2,osmMinimumZoom:30,territory:'UNKNOWN'}});
+assert.deepEqual(fallbackSearch,{maxResults:30,osmMinimumZoom:19,territory:'METROPOLE',maxSearchAreaKm2:2500},'valeurs de recherche invalides ramenées aux valeurs sûres');
+const placeUrl=buildPlaceSearchUrl('  dolmen  ',{search:{maxResults:12,osmMinimumZoom:8,territory:'METROPOLE'}});
+assert.equal(placeUrl.origin,'https://data.geopf.fr','endpoint officiel Géoplateforme');
+assert.equal(placeUrl.pathname,'/geocodage/search','route de géocodage direct');
+assert.equal(placeUrl.searchParams.get('q'),'dolmen','requête nettoyée');
+assert.equal(placeUrl.searchParams.get('limit'),'12','limite de résultats issue de la configuration');
+assert.equal(placeUrl.searchParams.get('terr'),'METROPOLE','recherche bornée à la France métropolitaine');
+const unsafeTerritory=buildPlaceSearchUrl('dolmen',{search:{territory:'*'}});
+assert.equal(unsafeTerritory.searchParams.get('terr'),'METROPOLE','territoire non autorisé refusé');
+console.log('PASS — territoire de géocodage, réglages OSM et limites de recherche.');
+
+const taxonomy=require('../config/archaeology-taxonomy.fr.json');
+const normalTaxonomy=normalizeTaxonomy(taxonomy);
+assert.ok(normalTaxonomy.length>=5,'taxonomie archéologique riche et exploitable');
+assert.ok(normalTaxonomy.some(category=>category.id==='megaliths'),'catégorie mégalithes présente');
+assert.ok(normalTaxonomy.some(category=>category.id==='roman'),'catégorie romaine présente');
+assert.equal(escapeOverpassValue('D"Artagnan\\Site'),'D\\"Artagnan\\\\Site','échappement Overpass');
+assert.equal(escapeOverpassRegex('barrow.*(east)'), 'barrow\\.\\*\\(east\\)', 'les caractères regex du texte sont littéraux');
+assert.equal(buildOverpassTagSelector({historic:'archaeological_site',archaeological_site:'megalith'}),'["historic"="archaeological_site"]["archaeological_site"="megalith"]','conjonction de tags OSM');
+const bbox={getSouth:()=>47.1,getWest:()=>0.1,getNorth:()=>47.3,getEast:()=>0.4};
+assert.ok(queryBoxFromBounds(bbox).areaKm2>0,'emprise métrique approximative positive');
+assert.throws(()=>buildOverpassQuery({bounds:{getSouth:()=>91,getWest:()=>0,getNorth:()=>92,getEast:()=>1},category:'megaliths',taxonomy}),/invalide/);
+const osmQuery=buildOverpassQuery({bounds:bbox,category:'megaliths',taxonomy,query:'dolmen'});
+assert.ok(osmQuery.includes('node["historic"="archaeological_site"]["archaeological_site"="megalith"]'),'nœud archéologique contraint au sous-type mégalithe');
+assert.ok(osmQuery.includes('way["historic"="archaeological_site"]["archaeological_site"="megalith"]'),'conjonction de tags appliquée aux ways');
+assert.ok(osmQuery.includes('relation["historic"="archaeological_site"]["archaeological_site"="megalith"]'),'relations archéologiques avec sous-type mégalithe');
+assert.match(osmQuery,/name~"dolmen"/,'texte utilisateur appliqué au nom');
+assert.match(osmQuery,/megalith_type~"dolmen"/,'recherche du sous-type indépendamment du nom');
+const safeRegexQuery=buildOverpassQuery({bounds:bbox,category:'megaliths',taxonomy,query:'barrow.*(east)'});
+assert.ok(safeRegexQuery.includes('name~"barrow\\\\.\\\\*\\\\(east\\\\)"'),'texte utilisateur échappé en regex littérale');
+const roadQuery=buildOverpassQuery({bounds:bbox,category:'ancient-roads',taxonomy});
+assert.doesNotMatch(roadQuery,/highway"="track/,'les pistes génériques ne sont pas traitées comme voies antiques');
+assert.throws(()=>buildOverpassQuery({bounds:{getSouth:()=>40,getWest:()=>-5,getNorth:()=>55,getEast:()=>10},category:'megaliths',taxonomy}),/trop vaste/);
+assert.throws(()=>buildOverpassQuery({bounds:bbox,category:'inconnue',taxonomy}),/inconnue/);
+const osmItem=osmElementToItem({type:'way',id:42,center:{lat:47.2,lon:0.2},tags:{name:'Dolmen test',historic:'archaeological_site',archaeological_site:'megalith',megalith_type:'dolmen'}});
+assert.equal(osmItem.id,'osm:way:42','identifiant stable OSM');
+assert.equal(osmItem.title,'Dolmen test','nom OSM');
+assert.equal(osmItem.kind,'dolmen','sous-type prioritaire');
+assert.equal(osmItem.url,'https://www.openstreetmap.org/way/42','lien source OSM');
+const duplicates=deduplicateOsmItems([osmItem,{...osmItem,title:'Libellé alternatif'},{id:'osm:node:2',title:'Autre',lat:47.3,lon:0.3}]);
+assert.equal(duplicates.length,2,'doublons d’une même entité OSM supprimés');
+assert.equal(osmElementToItem({type:'relation',id:1,tags:{name:'Sans géométrie'}}),null,'objet sans géométrie écarté');
+const poiUrl=buildPoiAutocompleteUrl('dolmen','pont');
+assert.equal(poiUrl.pathname,'/geocodage/completion/','endpoint POI autocomplete');
+assert.equal(poiUrl.searchParams.get('poiType'),'pont','poiType transmis uniquement depuis un type résolu');
+assert.equal(poiUrl.searchParams.get('terr'),'METROPOLE','périmètre territorial');
+assert.throws(()=>buildPoiAutocompleteUrl('dolmen',''),/GetCapabilities/);
+console.log('PASS — taxonomie, Overpass QL, géométrie OSM, filtre utilisateur et endpoint POI.');
+
+const r=normalizeResultRecord({id:'osm:node:7',title:'Dolmen test',kind:'megalith',source:'OpenStreetMap',lat:47.2,lon:0.2,tags:{historic:'archaeological_site'},category:'megaliths',verification:'unverified'},0,'OSM');
+assert.equal(r.id,'osm:node:7');assert.equal(r.verification,'unverified');assert.deepEqual(siteRecordToFeature(r).geometry.coordinates,[0.2,47.2]);assert.equal(normalizeResultRecord({title:'invalid',lat:95,lon:0},1,'IGN'),null);console.log('PASS — modèle commun de candidat.');
+
+assert.equal(r.category,'megaliths','catégorie territoriale conservée pour le filtre STEP 1');
+
+const tileState={
+ 'base-ign':{loading:false,loaded:18,failed:0,completed:true},
+ 'base-osm':{loading:false,loaded:0,failed:0,completed:false},
+ 'lidar-mnt':{loading:false,loaded:6,failed:2,completed:true}
+};
+assert.equal(tileHealthLabel(tileState['base-ign']),'OK — 18 tuile(s) reçue(s)');
+assert.match(tileHealthLabel(tileState['lidar-mnt']),/2 erreur/);
+assert.match(tileHealthLabel({loading:true,loaded:1,failed:0,completed:false}),/Chargement/);
+assert.match(buildTileHealthSummary('ign',tileState,['mnt']),/Plan IGN : OK/);
+assert.match(buildTileHealthSummary('osm',tileState,[]),/Couches LiDAR désactivées/);
+console.log('PASS — diagnostic des chargements et erreurs de tuiles IGN/OSM/LiDAR.');
