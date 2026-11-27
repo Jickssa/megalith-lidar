@@ -30,7 +30,7 @@ on:
         required: true
         default: "v3.3.0"
       mode:
-        description: "Build an unsigned candidate, or publish a signed public release after all gates pass"
+        description: "Build unsigned candidate, sign an installable test APK without publishing, or publish a signed public release"
         type: choice
         required: true
         default: "build-only"
