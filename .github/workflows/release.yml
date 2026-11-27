@@ -36,6 +36,7 @@ on:
         default: "build-only"
         options:
           - build-only
+          - signed-test
           - publish
       confirm_publication:
         description: "For publish only, enter exactly PUBLISH_PUBLIC_RELEASE to authorize creating the public tag and release"
@@ -260,16 +261,25 @@ jobs:
       - name: Record build provenance
         run: |
           echo "Source SHA: ${{ steps.identity.outputs.source_sha }}" >> "$GITHUB_STEP_SUMMARY"
-          if [[ "${{ inputs.mode || 'build-only' }}" == "build-only" ]]; then
-            echo "Non-publishing candidate only: no signing, no tag creation, no GitHub Release." >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo "Unsigned candidate verified; controlled signing/publication job will run with separate confirmation and certificate gates." >> "$GITHUB_STEP_SUMMARY"
-          fi
+          case "${{ inputs.mode || 'build-only' }}" in
+            build-only)
+              echo "Unsigned non-publishing candidate only: no signing, no tag creation, no GitHub Release." >> "$GITHUB_STEP_SUMMARY"
+              ;;
+            signed-test)
+              echo "A separate job will produce a historically signed installable APK artifact; no tag or public GitHub Release will be created." >> "$GITHUB_STEP_SUMMARY"
+              ;;
+            publish)
+              echo "A separate job will sign and verify the APK; public tag/Release creation requires explicit authorization." >> "$GITHUB_STEP_SUMMARY"
+              ;;
+            *)
+              echo "Unknown release mode"; exit 1
+              ;;
+          esac
 
   publish-release:
-    name: Sign and publish the verified Android release
+    name: Sign an installable APK and optionally publish the Android release
     needs: build-release-candidate
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'publish' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && (inputs.mode == 'signed-test' || inputs.mode == 'publish') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     permissions:
@@ -293,24 +303,28 @@ jobs:
           ref: ${{ needs.build-release-candidate.outputs.source_sha }}
           fetch-depth: 0
 
-      - name: Require explicit publication authorization and verify current source ref
+      - name: Verify signing prerequisites and public-release authorization
         run: |
           set -euo pipefail
-          [[ "${{ inputs.confirm_publication }}" == "PUBLISH_PUBLIC_RELEASE" ]] || { echo "Publication not explicitly authorized"; exit 1; }
+          if [[ "${{ inputs.mode }}" == "publish" ]]; then
+            [[ "${{ inputs.confirm_publication }}" == "PUBLISH_PUBLIC_RELEASE" ]] || { echo "Publication not explicitly authorized"; exit 1; }
+          fi
           [[ "$EXPECTED_CERT_SHA256" =~ ^[A-F0-9]{64}$ ]] || { echo "Historical certificate fingerprint was not established by upstream APK verification"; exit 1; }
           for name in KEYSTORE_BASE64 KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD; do
             [[ -n "${!name:-}" ]] || { echo "Required signing secret is absent: $name (or its RELEASE_ fallback)"; exit 1; }
           done
           [[ "$(git rev-parse HEAD)" == "$SOURCE_SHA" ]] || { echo "Checked-out commit does not match the validated build SHA"; exit 1; }
           REMOTE_BRANCH_SHA="$(git ls-remote origin "refs/heads/${SOURCE_REF}" | cut -f1)"
-          [[ "$REMOTE_BRANCH_SHA" == "$SOURCE_SHA" ]] || { echo "Source branch moved since candidate build; refusing publication"; exit 1; }
-          set +e
-          REMOTE_TAGS="$(git ls-remote --tags origin "refs/tags/${RELEASE_TAG}" "refs/tags/${RELEASE_TAG}^{}" 2>&1)"
-          TAG_STATUS=$?
-          set -e
-          if [[ "$TAG_STATUS" -ne 0 ]]; then echo "Could not establish tag availability (git ls-remote exit $TAG_STATUS)"; exit 1; fi
-          if [[ -n "$REMOTE_TAGS" ]]; then echo "Release tag already exists; refusing to replace it"; exit 1; fi
-          echo "Publication gates accepted for source $SOURCE_SHA and tag $RELEASE_TAG"
+          [[ "$REMOTE_BRANCH_SHA" == "$SOURCE_SHA" ]] || { echo "Source branch moved since candidate build; refusing signing/publication"; exit 1; }
+          if [[ "${{ inputs.mode }}" == "publish" ]]; then
+            set +e
+            REMOTE_TAGS="$(git ls-remote --tags origin "refs/tags/${RELEASE_TAG}" "refs/tags/${RELEASE_TAG}^{}" 2>&1)"
+            TAG_STATUS=$?
+            set -e
+            if [[ "$TAG_STATUS" -ne 0 ]]; then echo "Could not establish tag availability (git ls-remote exit $TAG_STATUS)"; exit 1; fi
+            if [[ -n "$REMOTE_TAGS" ]]; then echo "Release tag already exists; refusing to replace it"; exit 1; fi
+          fi
+          echo "Signing gates accepted for source $SOURCE_SHA and tag $RELEASE_TAG (mode: ${{ inputs.mode }})"
 
       - name: Set up JDK 17
         uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
@@ -372,7 +386,19 @@ jobs:
         with:
           subject-path: release/*.apk
 
+      - name: Upload signed installable APK for controlled testing
+        if: ${{ inputs.mode == 'signed-test' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: megalith-lidar-signed-test-${{ inputs.tag }}
+          path: |
+            release/megalith-lidar-${{ inputs.tag }}.apk
+            release/megalith-lidar-${{ inputs.tag }}.apk.sha256
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Publish the exact validated commit as a public GitHub Release
+        if: ${{ inputs.mode == 'publish' }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
